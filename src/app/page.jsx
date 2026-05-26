@@ -17,10 +17,24 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Particles } from "@/components/ui/particles";
+import { AuroraText } from "@/components/ui/aurora-text";
+import { MagicCard } from "@/components/ui/magic-card";
+import { WorkflowBeam } from "@/components/workflow-beam";
+import { LineShadowText } from "@/components/ui/line-shadow-text";
+import { RainbowButton } from "@/components/ui/rainbow-button";
+import { AnimatedGradientText } from "@/components/ui/animated-gradient-text";
 
 export default function LandingPage() {
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col min-h-screen relative overflow-hidden">
+      <Particles
+        className="absolute inset-0 z-0 pointer-events-none"
+        quantity={150}
+        ease={80}
+        color="#ffffff"
+        refresh
+      />
       {/* TopNavBar */}
       <header className="fixed top-0 w-full z-50 border-b bg-background/80 backdrop-blur-xl">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
@@ -66,19 +80,21 @@ export default function LandingPage() {
       <main className="flex-grow pt-20">
         {/* Hero Section */}
         <section className="container mx-auto px-4 py-24 text-center">
-          <Badge variant="outline" className="mb-4 py-1 px-4 text-sm font-medium">
-            ✨ AI-Powered Learning Evolution
+          <Badge variant="outline" className="mb-4 py-1 px-4 text-sm font-medium border-primary/20 bg-primary/5">
+            <AnimatedGradientText speed={2} colorFrom="#c0c1ff" colorTo="#8083ff">
+              ✨ AI-Powered Learning Evolution
+            </AnimatedGradientText>
           </Badge>
-          <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight mb-6 bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary-container">
-            Turn Chaotic Documents <br /> Into Crisp Study Suites
+          <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight mb-6">
+            Turn Chaotic Documents <br /> Into <AuroraText>Crisp Study Suites</AuroraText>
           </h1>
           <p className="text-xl text-muted-foreground mb-10 max-w-3xl mx-auto leading-relaxed">
             Instantly transform scattered notes, messy PDFs, and raw text into structured, interactive learning materials with the power of generative AI.
           </p>
           <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
-            <Button size="lg" asChild className="px-8 text-md font-semibold">
+            <RainbowButton asChild className="px-8 font-semibold">
               <Link href="/dashboard">Get Started for Free</Link>
-            </Button>
+            </RainbowButton>
             <Button size="lg" variant="outline" className="px-8 text-md font-semibold gap-2">
               <span className="material-symbols-outlined text-lg">play_circle</span> Watch Demo
             </Button>
@@ -88,98 +104,95 @@ export default function LandingPage() {
         {/* Feature Grid */}
         <section id="features" className="container mx-auto px-4 py-24 border-t">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-5xl font-bold mb-4">Powerful Study Tools</h2>
+            <h2 className="text-3xl md:text-5xl font-bold mb-4">
+              Powerful <LineShadowText className="italic" shadowColor="white">Study Tools</LineShadowText>
+            </h2>
             <p className="text-muted-foreground text-lg">Everything you need to master your subjects in record time.</p>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <Card className="hover:shadow-lg transition-all border-muted/50">
-              <CardHeader>
-                <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4 text-primary">
-                  <span className="material-symbols-outlined">quiz</span>
-                </div>
-                <CardTitle>Interactive Quizzes</CardTitle>
-                <CardDescription>Adaptive questions that test your depth of knowledge.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">
+            <MagicCard className="p-8 flex flex-col items-start gap-4 cursor-pointer">
+              <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center text-primary">
+                <span className="material-symbols-outlined">quiz</span>
+              </div>
+              <div>
+                <h3 className="text-xl font-bold mb-2">Interactive Quizzes</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">
                   AI generates practice questions based on your specific content, focusing on areas where you need improvement.
                 </p>
-              </CardContent>
-            </Card>
+              </div>
+            </MagicCard>
 
-            <Card className="hover:shadow-lg transition-all border-muted/50">
-              <CardHeader>
-                <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4 text-primary">
-                  <span className="material-symbols-outlined">style</span>
-                </div>
-                <CardTitle>Smart Flashcards</CardTitle>
-                <CardDescription>Automated spaced repetition for long-term memory.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">
+            <MagicCard className="p-8 flex flex-col items-start gap-4 cursor-pointer">
+              <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center text-primary">
+                <span className="material-symbols-outlined">style</span>
+              </div>
+              <div>
+                <h3 className="text-xl font-bold mb-2">Smart Flashcards</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">
                   Key concepts are automatically extracted and turned into digital flashcards ready for active recall.
                 </p>
-              </CardContent>
-            </Card>
+              </div>
+            </MagicCard>
 
-            <Card className="hover:shadow-lg transition-all border-muted/50">
-              <CardHeader>
-                <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4 text-primary">
-                  <span className="material-symbols-outlined">description</span>
-                </div>
-                <CardTitle>Structured Notes</CardTitle>
-                <CardDescription>Clean Markdown summaries from any source.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">
+            <MagicCard className="p-8 flex flex-col items-start gap-4 cursor-pointer">
+              <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center text-primary">
+                <span className="material-symbols-outlined">description</span>
+              </div>
+              <div>
+                <h3 className="text-xl font-bold mb-2">Structured Notes</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">
                   No more scrolling through hundreds of PDF pages. Get a concise, beautifully formatted summary of the essentials.
                 </p>
-              </CardContent>
-            </Card>
+              </div>
+            </MagicCard>
 
-            <Card className="hover:shadow-lg transition-all border-muted/50">
-              <CardHeader>
-                <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4 text-primary">
-                  <span className="material-symbols-outlined">account_tree</span>
-                </div>
-                <CardTitle>AI Flowcharts</CardTitle>
-                <CardDescription>Visualize complex logic and hierarchies.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">
+            <MagicCard className="p-8 flex flex-col items-start gap-4 cursor-pointer">
+              <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center text-primary">
+                <span className="material-symbols-outlined">account_tree</span>
+              </div>
+              <div>
+                <h3 className="text-xl font-bold mb-2">AI Flowcharts</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">
                   Complex processes are transformed into clear visual diagrams, making logical connections obvious.
                 </p>
-              </CardContent>
-            </Card>
+              </div>
+            </MagicCard>
           </div>
         </section>
 
         {/* How It Works */}
-        <section className="bg-muted/30 py-24">
+        <section className="py-24 border-t bg-muted/20">
           <div className="container mx-auto px-4">
             <div className="text-center mb-16">
-              <h2 className="text-3xl font-bold mb-4">Three Simple Steps</h2>
-              <p className="text-muted-foreground">From raw documents to expert knowledge.</p>
+              <h2 className="text-3xl md:text-5xl font-bold mb-4">
+                Three <LineShadowText className="italic" shadowColor="white">Simple Steps</LineShadowText>
+              </h2>
+              <p className="text-muted-foreground text-lg">From raw documents to expert knowledge.</p>
             </div>
             
-            <div className="flex flex-col md:flex-row justify-between items-center gap-12">
-              <div className="flex-1 text-center space-y-4">
-                <div className="w-16 h-16 mx-auto bg-background border-2 border-primary/20 rounded-full flex items-center justify-center text-2xl font-bold text-primary">1</div>
-                <h3 className="text-xl font-semibold">Upload</h3>
-                <p className="text-muted-foreground">Drop your PDFs, lecture notes, or research papers into the dash.</p>
-              </div>
-              <div className="hidden md:block w-12 h-px bg-muted-foreground/20" />
-              <div className="flex-1 text-center space-y-4">
-                <div className="w-16 h-16 mx-auto bg-primary text-primary-foreground rounded-full flex items-center justify-center text-2xl font-bold shadow-xl shadow-primary/20">2</div>
-                <h3 className="text-xl font-semibold">Synthesize</h3>
-                <p className="text-muted-foreground">Our AI engine analyzes and structures your material instantly.</p>
-              </div>
-              <div className="hidden md:block w-12 h-px bg-muted-foreground/20" />
-              <div className="flex-1 text-center space-y-4">
-                <div className="w-16 h-16 mx-auto bg-background border-2 border-primary/20 rounded-full flex items-center justify-center text-2xl font-bold text-primary">3</div>
-                <h3 className="text-xl font-semibold">Learn</h3>
-                <p className="text-muted-foreground">Start practicing with adaptive quizzes and interactive diagrams.</p>
+            <div className="max-w-4xl mx-auto">
+              <WorkflowBeam className="py-12" showLabels={false} />
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mt-8 px-4">
+                <div className="text-center space-y-2">
+                  <h3 className="text-xl font-bold">1. Upload</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    Drop your PDFs, lecture notes, or research papers into the dash.
+                  </p>
+                </div>
+                <div className="text-center space-y-2">
+                  <h3 className="text-xl font-bold text-primary">2. Synthesize</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    Our AI engine analyzes and structures your material instantly.
+                  </p>
+                </div>
+                <div className="text-center space-y-2">
+                  <h3 className="text-xl font-bold">3. Learn</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    Start practicing with adaptive quizzes and interactive diagrams.
+                  </p>
+                </div>
               </div>
             </div>
           </div>
@@ -195,9 +208,9 @@ export default function LandingPage() {
               <p className="text-primary-foreground/80 text-lg max-w-2xl mx-auto">
                 Join thousands of students and researchers who are learning 3x faster with StudyAI.
               </p>
-              <Button size="lg" variant="secondary" asChild className="px-10 font-bold h-14 text-lg">
+              <RainbowButton asChild className="px-10 font-bold h-14 text-lg">
                 <Link href="/dashboard">Create Free Account</Link>
-              </Button>
+              </RainbowButton>
             </div>
           </Card>
         </section>
