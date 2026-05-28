@@ -29,6 +29,7 @@ export default function RootLayout({ children }) {
           defaultTheme="dark"
           enableSystem
           disableTransitionOnChange
+          enableColorScheme={false}
         >
           <TooltipProvider>
             {children}

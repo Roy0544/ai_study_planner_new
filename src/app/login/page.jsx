@@ -2,22 +2,71 @@
 
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { FlickeringGrid } from "@/components/ui/flickering-grid";
 import { Globe } from "@/components/ui/globe";
 import { BorderBeam } from "@/components/ui/border-beam";
+import { handleGoogleLogin, handleEmailLogin } from "@/config/client";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
+import { useRouter } from "next/navigation";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { useState } from "react";
+
+const formSchema = z.object({
+  email: z.string().email({
+    message: "Please enter a valid email address.",
+  }),
+  password: z.string().min(8, {
+    message: "Password must be at least 8 characters.",
+  }),
+});
 
 export default function LoginPage() {
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const form = useForm({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+    },
+  });
+
+  async function onSubmit(values) {
+    console.log("Form submitted with values:", values);
+    setIsLoading(true);
+    setError("");
+    
+    try {
+      const { data, error: loginError } = await handleEmailLogin(values.email, values.password);
+      
+      if (!loginError) {
+        console.log("Login successful:", data);
+        router.push("/dashboard");
+      } else {
+        console.error("Login failed:", loginError.message);
+        setError(loginError.message);
+      }
+    } catch (err) {
+      console.error("Unexpected error:", err);
+      setError("An unexpected error occurred. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
   return (
     <div className="flex min-h-screen bg-background">
       {/* Left Side: Aesthetic Branding (Hidden on mobile) */}
@@ -95,7 +144,12 @@ export default function LoginPage() {
               </div>
 
               <div className="space-y-6">
-                <Button variant="outline" className="w-full h-12 gap-3 font-medium border-muted-foreground/10 hover:bg-accent/50 transition-all rounded-xl" onClick={() => {}}>
+                <Button 
+                  onClick={handleGoogleLogin} 
+                  variant="outline" 
+                  disabled={isLoading}
+                  className="w-full h-12 gap-3 font-medium border-muted-foreground/10 hover:bg-accent/50 transition-all rounded-xl"
+                >
                   <svg className="w-5 h-5" viewBox="0 0 24 24">
                     <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"></path>
                     <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"></path>
@@ -104,6 +158,7 @@ export default function LoginPage() {
                   </svg>
                   Continue with Google
                 </Button>
+
 
                 <div className="relative">
                   <div className="absolute inset-0 flex items-center">
@@ -114,47 +169,82 @@ export default function LoginPage() {
                   </div>
                 </div>
 
-                <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
-                  <div className="space-y-2">
-                    <Label htmlFor="email" className="text-sm font-semibold ml-1">Email address</Label>
-                    <div className="relative">
-                      <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground/60 text-lg">mail</span>
-                      <Input 
-                        id="email" 
-                        type="email" 
-                        placeholder="name@example.com" 
-                        className="pl-12 h-12 bg-muted/20 border-muted-foreground/10 focus-visible:ring-primary rounded-xl" 
-                        required 
-                      />
-                    </div>
-                  </div>
+                <Form {...form}>
+                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                    {error && (
+                      <div className="bg-destructive/10 border border-destructive/20 text-destructive text-xs font-medium p-3 rounded-xl animate-in fade-in slide-in-from-top-1">
+                        {error}
+                      </div>
+                    )}
+                    <FormField
+                      control={form.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItem className="space-y-2">
+                          <FormLabel className="text-sm font-semibold ml-1">Email address</FormLabel>
+                          <FormControl>
+                            <div className="relative">
+                              <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground/60 text-lg">
+                                mail
+                              </span>
+                              <Input
+                                placeholder="name@example.com"
+                                className="pl-12 h-12 bg-muted/20 border-muted-foreground/10 focus-visible:ring-primary rounded-xl"
+                                {...field}
+                              />
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                  <div className="space-y-2">
-                    <div className="flex justify-between items-center ml-1">
-                      <Label htmlFor="password" name="password" className="text-sm font-semibold">Password</Label>
-                      <Link href="#" className="text-xs font-bold text-primary hover:underline underline-offset-4">Forgot password?</Link>
-                    </div>
-                    <div className="relative">
-                      <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground/60 text-lg">lock</span>
-                      <Input 
-                        id="password" 
-                        type="password" 
-                        placeholder="••••••••" 
-                        className="pl-12 h-12 bg-muted/20 border-muted-foreground/10 focus-visible:ring-primary rounded-xl" 
-                        required 
-                      />
-                    </div>
-                  </div>
+                    <FormField
+                      control={form.control}
+                      name="password"
+                      render={({ field }) => (
+                        <FormItem className="space-y-2">
+                          <div className="flex justify-between items-center ml-1">
+                            <FormLabel className="text-sm font-semibold">Password</FormLabel>
+                            <Link
+                              href="#"
+                              className="text-xs font-bold text-primary hover:underline underline-offset-4"
+                            >
+                              Forgot password?
+                            </Link>
+                          </div>
+                          <FormControl>
+                            <div className="relative">
+                              <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground/60 text-lg">
+                                lock
+                              </span>
+                              <Input
+                                type="password"
+                                placeholder="••••••••"
+                                className="pl-12 h-12 bg-muted/20 border-muted-foreground/10 focus-visible:ring-primary rounded-xl"
+                                {...field}
+                              />
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                  <Button type="submit" className="w-full h-12 font-bold shadow-lg shadow-primary/20 rounded-xl mt-2" asChild>
-                    <Link href="/dashboard">Sign In</Link>
-                  </Button>
-                </form>
+                    <Button 
+                      type="submit" 
+                      disabled={isLoading}
+                      className="w-full h-12 font-bold shadow-lg shadow-primary/20 rounded-xl mt-2"
+                    >
+                      {isLoading ? "Signing In..." : "Sign In"}
+                    </Button>
+                  </form>
+                </Form>
               </div>
 
               <p className="text-center text-sm text-muted-foreground pt-2">
                 Don&apos;t have an account?{" "}
-                <Link href="#" className="font-bold text-primary hover:underline underline-offset-4">Sign up for free</Link>
+                <Link href="/signup" className="font-bold text-primary hover:underline underline-offset-4">Sign up for free</Link>
               </p>
             </div>
           </div>

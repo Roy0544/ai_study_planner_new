@@ -12,10 +12,11 @@ import {
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { MagicCard } from "@/components/ui/magic-card";
-import { BorderBeam } from "@/components/ui/border-beam";
+import { BorderBeam } from "@/components/ui/magic-card";
 import { AnimatedGradientText } from "@/components/ui/animated-gradient-text";
 
 export function AppSidebar() {
+
   return (
     <Sidebar variant="inset" className="border-r border-border/50 bg-background/50 backdrop-blur-xl">
       <SidebarHeader className="p-6">
