@@ -129,6 +129,7 @@ function LiquidGlassCard({
   glassSize,
   glassEffect = true,
   children,
+  containerClassName,
   ...props
 }) {
   const filterId = React.useId();
@@ -150,7 +151,7 @@ function LiquidGlassCard({
           <GlassFilter id={filterId} scale={DEFAULT_GLASS_FILTER_SCALE} />
         </>
       )}
-      <div className="relative z-10">{children}</div>
+      <div className={cn("relative z-10", containerClassName)}>{children}</div>
       <div
         className="pointer-events-none absolute inset-0 z-20 rounded-[inherit] bg-gradient-to-r from-transparent via-black/5 to-transparent opacity-0 transition-opacity duration-200 group-hover:opacity-100 dark:via-white/5" />
     </Card>

@@ -9,7 +9,7 @@
  * @github: https://github.com/kokonut-labs/kokonutui
  */
 
-import { Globe, Paperclip, Send } from "lucide-react";
+import { Globe, Paperclip, Send, Loader2 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";
 import { Textarea } from "@/components/ui/textarea";
@@ -23,6 +23,8 @@ export default function AI_Input_Search({
   className
 }) {
   const [value, setValue] = useState("");
+  const [file, setFile] = useState(null);
+  const [isUploading, setIsUploading] = useState(false);
   const { textareaRef, adjustHeight } = useAutoResizeTextarea({
     minHeight: 52,
     maxHeight: 200,
@@ -30,10 +32,25 @@ export default function AI_Input_Search({
   const [showSearch, setShowSearch] = useState(true);
   const [isFocused, setIsFocused] = useState(false);
 
-  const handleSubmit = () => {
-    onSubmit?.(value);
-    setValue("");
-    adjustHeight(true);
+  const handleSubmit = async () => {
+    if (!value && !file) return;
+    
+    setIsUploading(true);
+    try {
+      await onSubmit?.({ text: value, file: file });
+      setValue("");
+      setFile(null);
+      adjustHeight(true);
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleFileChange = (e) => {
+    const selectedFile = e.target.files?.[0];
+    if (selectedFile) {
+      setFile(selectedFile);
+    }
   };
 
   const handleFocus = () => {
@@ -91,11 +108,18 @@ export default function AI_Input_Search({
 
           <div className="h-12 rounded-b-xl bg-black/5 dark:bg-white/5">
             <div className="absolute bottom-3 left-3 flex items-center gap-2">
-              <label className="cursor-pointer rounded-lg bg-black/5 p-2 dark:bg-white/5">
-                <input className="hidden" type="file" />
-                <Paperclip
-                  className="h-4 w-4 text-black/40 transition-colors hover:text-black dark:text-white/40 dark:hover:text-white" />
+              <label className={cn(
+                "cursor-pointer rounded-lg p-2 transition-all",
+                file ? "bg-violet-500/15 text-violet-500" : "bg-black/5 dark:bg-white/5 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white"
+              )}>
+                <input className="hidden" type="file" onChange={handleFileChange} />
+                <Paperclip className="h-4 w-4" />
               </label>
+              {file && (
+                <span className="text-[10px] font-medium text-violet-500 max-w-[100px] truncate">
+                  {file.name}
+                </span>
+              )}
               <button
                 className={cn(
                   "flex h-8 cursor-pointer items-center gap-2 rounded-full border px-1.5 py-1 transition-all",
@@ -103,7 +127,8 @@ export default function AI_Input_Search({
                     ? "border-violet-400 bg-violet-500/15 text-violet-500"
                     : "border-transparent bg-black/5 text-black/40 hover:text-black dark:bg-white/5 dark:text-white/40 dark:hover:text-white"
                 )}
-                onClick={() => {
+                onClick={(e) => {
+                  e.stopPropagation();
                   setShowSearch(!showSearch);
                 }}
                 type="button">
@@ -149,12 +174,24 @@ export default function AI_Input_Search({
             </div>
             <div className="absolute right-3 bottom-3">
               <button
-                className={cn("rounded-lg p-2 transition-colors", value
-                  ? "bg-violet-500/15 text-violet-500"
-                  : "cursor-pointer bg-black/5 text-black/40 hover:text-black dark:bg-white/5 dark:text-white/40 dark:hover:text-white")}
-                onClick={handleSubmit}
+                className={cn(
+                  "rounded-lg p-2 transition-all duration-200",
+                  (value || file) && !isUploading
+                    ? "bg-violet-500/15 text-violet-500 cursor-pointer hover:bg-violet-500/25"
+                    : "bg-black/5 text-black/40 dark:bg-white/5 dark:text-white/40 cursor-not-allowed"
+                )}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleSubmit();
+                }}
+                disabled={(!value && !file) || isUploading}
                 type="button">
-                <Send className="h-4 w-4" />
+                {isUploading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Send className="h-4 w-4" />
+                )}
               </button>
             </div>
           </div>

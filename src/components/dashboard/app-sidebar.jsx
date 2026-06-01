@@ -11,11 +11,13 @@ import {
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { MagicCard } from "@/components/ui/magic-card";
 import { BorderBeam } from "@/components/ui/magic-card";
 import { AnimatedGradientText } from "@/components/ui/animated-gradient-text";
 
 export function AppSidebar() {
+  const pathname = usePathname();
 
   return (
     <Sidebar variant="inset" className="border-r border-border/50 bg-background/50 backdrop-blur-xl">
@@ -34,7 +36,7 @@ export function AppSidebar() {
       <SidebarContent className="px-4 mt-4">
         <SidebarMenu className="space-y-2">
           <SidebarMenuItem>
-            <SidebarMenuButton asChild isActive tooltip="Dashboard" className="h-11 rounded-xl data-[active=true]:bg-secondary/10 data-[active=true]:text-[#8B5CF6] hover:text-secondary hover:bg-secondary/5 transition-all">
+            <SidebarMenuButton asChild isActive={pathname === "/dashboard"} tooltip="Dashboard" className="h-11 rounded-xl data-[active=true]:bg-secondary/10 data-[active=true]:text-[#8B5CF6] hover:text-secondary hover:bg-secondary/5 transition-all">
               <Link href="/dashboard">
                 <span className="material-symbols-outlined mr-2">space_dashboard</span>
                 <span className="font-medium">Dashboard</span>
@@ -42,7 +44,7 @@ export function AppSidebar() {
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
-            <SidebarMenuButton asChild tooltip="Study Sets" className="h-11 rounded-xl hover:text-secondary hover:bg-secondary/5 transition-all">
+            <SidebarMenuButton asChild isActive={pathname === "/dashboard/sets"} tooltip="Study Sets" className="h-11 rounded-xl data-[active=true]:bg-secondary/10 data-[active=true]:text-[#8B5CF6] hover:text-secondary hover:bg-secondary/5 transition-all">
               <Link href="/dashboard/sets">
                 <span className="material-symbols-outlined mr-2">folder_copy</span>
                 <span className="font-medium">Study Sets</span>
@@ -50,7 +52,7 @@ export function AppSidebar() {
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
-            <SidebarMenuButton asChild tooltip="Analytics" className="h-11 rounded-xl hover:text-secondary hover:bg-secondary/5 transition-all">
+            <SidebarMenuButton asChild isActive={pathname === "/dashboard/analytics"} tooltip="Analytics" className="h-11 rounded-xl data-[active=true]:bg-secondary/10 data-[active=true]:text-[#8B5CF6] hover:text-secondary hover:bg-secondary/5 transition-all">
               <Link href="/dashboard/analytics">
                 <span className="material-symbols-outlined mr-2">insights</span>
                 <span className="font-medium">Analytics</span>
@@ -58,7 +60,7 @@ export function AppSidebar() {
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
-            <SidebarMenuButton asChild tooltip="Settings" className="h-11 rounded-xl hover:text-secondary hover:bg-secondary/5 transition-all">
+            <SidebarMenuButton asChild isActive={pathname === "/dashboard/settings"} tooltip="Settings" className="h-11 rounded-xl data-[active=true]:bg-secondary/10 data-[active=true]:text-[#8B5CF6] hover:text-secondary hover:bg-secondary/5 transition-all">
               <Link href="/dashboard/settings">
                 <span className="material-symbols-outlined mr-2">settings</span>
                 <span className="font-medium">Settings</span>

@@ -1,5 +1,5 @@
 "use client"
-import { createClient } from "@supabase/supabase-js";
+import { createBrowserClient } from "@supabase/ssr";
 
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
@@ -9,7 +9,7 @@ if (typeof window !== 'undefined') {
   console.log('Supabase Connection Status:', !!supabaseUrl && !!supabaseAnonKey ? 'Ready' : 'Configuration Missing');
 }
 
-const client = createClient(
+const client = createBrowserClient(
   supabaseUrl || "",
   supabaseAnonKey || ""
 );
@@ -67,6 +67,28 @@ export const handleLogout = async () => {
         window.location.href = "/";
     } catch (error) {
         console.error('Error during logout:', error.message);
+    }
+}
+export const uploadHandler=async(file)=>{
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Math.random()}.${fileExt}`;
+    // WARNING: currentUser is not defined in this scope. 
+    // You should retrieve it via await client.auth.getUser() if needed.
+    const { data: { user } } = await client.auth.getUser();
+    if (!user) throw new Error("Not authenticated");
+    
+    const filePath = `${user.id}/${fileName}`;
+    try {
+        const {data,error}=await client.storage.from('study-materials').upload(filePath,file)
+        if(error) throw error
+        
+        const { data: { publicUrl } } = client.storage
+          .from('study-materials')
+          .getPublicUrl(`public/${fileName}`);
+    
+        return { success: true, url: publicUrl };
+    } catch (error) {
+        console.log("error is ",error.message)
     }
 }
 
