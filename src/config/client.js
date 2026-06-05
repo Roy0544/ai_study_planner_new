@@ -69,26 +69,29 @@ export const handleLogout = async () => {
         console.error('Error during logout:', error.message);
     }
 }
-export const uploadHandler=async(file)=>{
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${Math.random()}.${fileExt}`;
-    // WARNING: currentUser is not defined in this scope. 
-    // You should retrieve it via await client.auth.getUser() if needed.
-    const { data: { user } } = await client.auth.getUser();
-    if (!user) throw new Error("Not authenticated");
-    
-    const filePath = `${user.id}/${fileName}`;
+export const uploadHandler = async (file) => {
     try {
-        const {data,error}=await client.storage.from('study-materials').upload(filePath,file)
-        if(error) throw error
+        const { data: { user }, error: authError } = await client.auth.getUser();
+        if (authError || !user) throw new Error("Authentication required");
+
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
+        const filePath = `${user.id}/${fileName}`;
+
+        const { data, error: uploadError } = await client.storage
+            .from('study-materials')
+            .upload(filePath, file);
+            
+        if (uploadError) throw uploadError;
         
         const { data: { publicUrl } } = client.storage
           .from('study-materials')
-          .getPublicUrl(`public/${fileName}`);
+          .getPublicUrl(filePath);
     
-        return { success: true, url: publicUrl };
+        return { success: true, url: publicUrl, path: filePath };
     } catch (error) {
-        console.log("error is ",error.message)
+        console.error("Upload failed:", error.message);
+        return { success: false, error: error.message };
     }
 }
 

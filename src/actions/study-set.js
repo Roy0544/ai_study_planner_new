@@ -27,26 +27,67 @@ async function getSupabaseServerClient() {
   });
 }
 
-async function getGeminiFilePart(fileUrl) {
+async function getGeminiFilePart( fileUrl  ) {
   if (!fileUrl) return null;
+  console.log("Attempting to fetch file for AI from URL:", fileUrl);
+  
   try {
+    let buffer;
+    let mimeType;
+    
     const response = await fetch(fileUrl);
-    if (!response.ok) throw new Error("Failed to fetch file");
-    const buffer = await response.arrayBuffer();
-    const mimeType = response.headers.get('content-type') || 'application/pdf'; // fallback
+    
+    if (response.ok) {
+      buffer = await response.arrayBuffer();
+      mimeType = response.headers.get('content-type');
+      console.log("Fetch successful. Initial MIME type:", mimeType);
+    } else {
+      console.error(`Fetch failed with status: ${response.status} ${response.statusText}`);
+      console.log("Attempting fallback download via Supabase SDK...");
+      const supabase = await getSupabaseServerClient();
+      
+      const urlParts = fileUrl.split('/study-materials/');
+      if (urlParts.length < 2) throw new Error("Could not parse storage path from URL");
+      
+      const filePath = urlParts[1];
+      const { data, error } = await supabase.storage
+        .from('study-materials')
+        .download(filePath);
+        
+      if (error) throw error;
+      
+      buffer = await data.arrayBuffer();
+      mimeType = data.type;
+      console.log("Fallback download successful. Initial MIME type:", mimeType);
+    }
+
+    // Fix generic or missing mime types
+    if (!mimeType || mimeType === 'application/octet-stream') {
+      const urlLower = fileUrl.toLowerCase();
+      if (urlLower.includes('.pdf')) mimeType = 'application/pdf';
+      else if (urlLower.includes('.png')) mimeType = 'image/png';
+      else if (urlLower.match(/\.(jpg|jpeg)$/)) mimeType = 'image/jpeg';
+      else if (urlLower.includes('.webp')) mimeType = 'image/webp';
+      else if (urlLower.includes('.txt')) mimeType = 'text/plain';
+      else mimeType = 'application/pdf'; // fallback
+    }
+
+    const base64Data = Buffer.from(buffer).toString("base64");
+    console.log("File converted to base64 successfully, final MIME type:", mimeType, "length:", base64Data.length);
+    
     return {
       inlineData: {
-        data: Buffer.from(buffer).toString("base64"),
+        data: base64Data,
         mimeType
       }
     };
   } catch (error) {
-    console.error("Error fetching file for AI:", error);
+    console.error("Error fetching file for AI:", error.message);
     return null;
   }
 }
 
-export async function generateStudySets(content) {
+export async function generateStudySets(content, fileUrl) {
   const apiKey = process.env.GEMINI_API_KEY;
 
   if (!apiKey) {
@@ -56,68 +97,64 @@ export async function generateStudySets(content) {
 
   const genAI = new GoogleGenerativeAI(apiKey);
   console.log("Starting AI generation. Content length:", content?.length);
-   const NOTES_SYSTEM_PROMPT = `You are an elite academic synthesizer and UI content designer. Your task is to transform the provided source text or document into highly engaging, modern, and ultra-scannable summary or notes. 
+  
+  const SYSTEM_PROMPT = `You are an elite academic synthesizer. Your task is to transform source material into a HIGHLY DETAILED, comprehensive, and ultra-structured study guide. 
 
-The target audience consists of students who suffer from cognitive fatigue, so the formatting must be dynamic, visually interesting, and structured to maximize retention while eliminating boredom.
+  CORE GOAL: Cover 100% of the topics, concepts, and sub-points mentioned in the source. Do not skip details for the sake of brevity. If the source is long, your output should be appropriately long and thorough.
 
-Strictly adhere to the following layout and formatting rules:
-
-1. High-Level Summary Card:
-   - Start immediately with a short, 2-3 sentence high-level overview of the entire topic. Wrap this in a Markdown blockquote (>) to make it look like a highlighted summary banner.
-
-2. Structural Hierarchy:
-   - Break the content down into clear, logical subsections using \`##\` and \`###\` headers.
-   - Every major section must begin with a relevant emoji in the title to break visual monotony (e.g., "## 🧬 The Krebs Cycle").
-
-3. The "Chunking" Rule:
-   - Never write a paragraph longer than 3 sentences. 
-   - Use bold text (\`**key phrase**\`) strategically on critical concepts so a user can skim the page and still understand the core message.
-
-4. Multi-Format Elements (Mix and Match these per section):
-   - Key Takeaways: Use bullet points (\`*\`) for quick facts, but ensure the first 2-4 words of the bullet point are bolded.
-   - Chronological/Process Steps: Use numbered lists (\`1.\`, \`2.\`) if explaining a sequential process or timeline.
-   - Dynamic Callouts: Use blockquotes for crucial "Pro-Tips", "Common Pitfalls", or "Exam Alerts" to pull the reader's eye down the page.
-
-5. Technical Vocabulary:
-   - If a complex or industry-specific term is introduced, write it as: \`**Term** — *Simple definition or analogy.*\`
-
-6. Scope:
-   - Ensure 100% of the core educational concepts from the source material are captured. Do not drop important data for brevity, but compress the explanation down to its absolute essence.
-
-Output your response using standard, clean GitHub-Flavored Markdown text. Do not wrap the response in markdown code blocks (\`\`\`markdown). Begin directly with the main title.`;
+  For the 'summary' field, follow these structural rules:
+  1. High-Level Summary Card: Start with a clear 3-4 sentence overview of the entire subject wrapped in a Markdown blockquote (>).
+  2. Structural Hierarchy: Break the content into many logical sections using ## and ### headers. Every major section MUST start with a relevant emoji.
+  3. Depth: For every concept, provide a thorough explanation. Use bold text (**key phrases**) for easier scanning, but ensure the surrounding context is complete.
+  4. Multi-Format Elements: Use bullet points for lists, numbered steps for processes, and blockquotes for "Exam Tips" or "Deep Dives".
+  5. Technical Vocabulary: Always define complex terms as **Term** — *Comprehensive definition, context, or analogy.*
+  6. Completeness: Ensure that every single subheading or distinct idea from the source material is represented as a section in your notes.`;
 
   try {
     const model = genAI.getGenerativeModel({ 
-      model: "gemini-2.5-flash",
-      systemInstruction: NOTES_SYSTEM_PROMPT,
-      generationConfig: { responseMimeType: "application/json" }
+      model: "gemini-3.5-flash",
+      systemInstruction: SYSTEM_PROMPT,
+      generationConfig: { 
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: "object",
+          properties: {
+            title:       { type: "string" },
+            description: { type: "string" },
+            category:    { type: "string" },
+            summary:     { type: "string" },
+          },
+          required: ["title", "description", "category", "summary"]
+        },
+        temperature: 0.3 
+      }
     });
 
-    const prompt = `
-      You are an expert educational content creator.
-      Analyze the following study material and return a JSON object.
-      The JSON object must have exactly these keys:
-      - title: A concise and engaging title for the study set
-      - description: A brief 1-2 sentence overview of the topic
-      - category: The academic subject or category (e.g., Biology, History, Chemistry, Physics, Literature, Mathematics, etc.)
-      - summary: A clear, comprehensive summary of the key concepts in Markdown format
+    const promptParts = [];
 
-      Material: ${content}
+    if (fileUrl) {
+      const filePart = await getGeminiFilePart(fileUrl);
+      if (!filePart) {
+         throw new Error("Failed to process the uploaded file for AI analysis.");
+      }
+      promptParts.push(filePart);
+    }
+
+    const prompt = `
+      Analyze the attached study material and/or the text provided below.
+      Material: ${content || "[Extract entirely from the attached file.]"}
     `;
 
-    const result = await model.generateContent(prompt);
-    const text = result.response.text();
+    promptParts.push(prompt);
 
+    const result = await model.generateContent(promptParts);
+    
     try {
-      const data = JSON.parse(text);
+      const data = JSON.parse(result.response.text());
       return { success: true, data };
     } catch (parseError) {
-      const jsonMatch = text.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        const cleanedData = JSON.parse(jsonMatch[0]);
-        return { success: true, data: cleanedData };
-      }
-      throw new Error("Invalid response format from AI");
+      console.error("JSON parse failed:", parseError);
+      return { success: false, error: "Failed to parse AI response" };
     }
   } catch (error) {
     console.error("AI Generation failed:", error);
@@ -129,8 +166,8 @@ Output your response using standard, clean GitHub-Flavored Markdown text. Do not
 }
 
 export async function createFullStudySet(formData) {
-  const text = formData.get('text');
-  const file = formData.get('file'); // File object
+  const text = (formData.get('text') || '').toString();
+  const fileUrl = formData.get('fileUrl'); // Received from client upload
 
   console.log("Starting complete study set creation process...");
 
@@ -138,45 +175,13 @@ export async function createFullStudySet(formData) {
     const supabase = await getSupabaseServerClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
-    if (authError) {
-      console.error("Supabase Auth Error:", authError.message);
-    }
-
-    if (!user) {
-      console.log("No user found in session. Checking cookies...");
-      const cookieStore = await cookies();
-      const allCookies = cookieStore.getAll().map(c => c.name);
-      console.log("Available cookies:", allCookies);
+    if (authError || !user) {
       throw new Error("Authentication required");
     }
 
     console.log("Authenticated as user:", user.id);
-    
-    // ... rest of logic
 
-    // 1. Upload File if exists
-    let fileUrl = null;
-    if (file && file.size > 0) {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
-
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('study-materials')
-        .upload(fileName, file);
-
-      if (uploadError) {
-        console.error("File upload failed:", uploadError);
-        throw new Error("Failed to upload study material file");
-      }
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('study-materials')
-        .getPublicUrl(fileName);
-
-      fileUrl = publicUrl;
-    }
-
-    // 2. Create Material Record FIRST
+    // 1. Create Material Record FIRST
     const { data: material, error: materialError } = await supabase
       .from('materials')
       .insert({
@@ -194,8 +199,8 @@ export async function createFullStudySet(formData) {
 
     console.log("Material saved with ID:", material.id);
 
-    // 3. Generate AI Content using the provided text
-    const aiResult = await generateStudySets(text);
+    // 2. Generate AI Content using the provided text AND the fileUrl
+    const aiResult = await generateStudySets(text, fileUrl);
     if (!aiResult.success) {
       // Cleanup: Optionally delete the material if AI fails
       await supabase.from('materials').delete().eq('id', material.id);
@@ -204,7 +209,7 @@ export async function createFullStudySet(formData) {
 
     const { title, description, category, summary } = aiResult.data;
 
-    // 4. Create Study Set with reference to material_id
+    // 3. Create Study Set with reference to material_id
     const { data: studySet, error: studySetError } = await supabase
       .from('study_sets')
       .insert({
@@ -227,10 +232,10 @@ export async function createFullStudySet(formData) {
     console.error("Creation failed:", error.message);
     return { success: false, error: error.message };
     }
-    }
+}
 
-    export async function fetchStudySets() {
-    try {
+export async function fetchStudySets() {
+  try {
     const supabase = await getSupabaseServerClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
@@ -270,7 +275,7 @@ export async function fetchStudySetById(id) {
 
     if (error) throw error;
 
-    // Fetch flashcards for this study set
+    // Fetch flashcards
     const { data: flashcardsData } = await supabase
       .from('flashcards')
       .select('cards')
@@ -281,7 +286,7 @@ export async function fetchStudySetById(id) {
       data.flashcards = flashcardsData.cards;
     }
 
-    // Fetch flowcharts for this study set
+    // Fetch flowcharts
     const { data: flowchartsData } = await supabase
       .from('flowcharts')
       .select('mermaid_code')
@@ -292,7 +297,7 @@ export async function fetchStudySetById(id) {
       data.mindmaps = flowchartsData.mermaid_code;
     }
 
-    // Fetch quiz for this study set
+    // Fetch quiz
     const { data: quizData } = await supabase
       .from('quizzes')
       .select('payload')
@@ -313,47 +318,69 @@ export async function fetchStudySetById(id) {
 export async function generateMindMap(setId, content, fileUrl) {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
-    return { success: false, error: "GEMINI_API_KEY is not defined" };
+    return { success: false, error: "apiKey is not defined" };
   }
 
   const genAI = new GoogleGenerativeAI(apiKey);
 
   try {
     const model = genAI.getGenerativeModel({ 
-      model: "gemini-2.5-flash",
+      model: "gemini-2.5-flash-lite",
+      generationConfig: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: "object",
+          properties: {
+            mermaid: { type: "string" },
+          },
+          required: ["mermaid"]
+        }
+      }
     });
 
+    const promptParts = [];
+    if (fileUrl) {
+      const filePart = await getGeminiFilePart(fileUrl);
+      if (filePart) promptParts.push(filePart);
+    }
+
     const prompt = `
-      Create a detailed and colorful Mermaid.js mindmap diagram for the following study material.
-
-      Requirements:
-      1. Root Node: The central topic.
-      2. Branches: Each major section should be a primary branch.
-      3. Sub-branches: Break down major sections into detailed sub-points.
-      4. Diversity: Use different node shapes if appropriate (e.g., ((Round)), [Square], )Leaf( ).
-
-      Return ONLY the valid Mermaid.js code. Do NOT wrap it in markdown block quotes (e.g. \`\`\`mermaid) and do NOT include any other text.
-      The code MUST start with \`mindmap\`.
-
-      Material: ${content}
+      Create a detailed Mermaid.js mindmap diagram for the following study material.
+      
+      CRITICAL SYNTAX REQUIREMENTS - YOU MUST OBEY THESE EXACTLY:
+      1. MUST start with the exact word "mindmap"
+      2. The root node must be indented with exactly 2 spaces.
+      3. All subsequent child nodes MUST be indented with exactly 2 more spaces than their parent (e.g., 4 spaces, 6 spaces, 8 spaces).
+      4. DO NOT use markdown code blocks (\`\`\`). Return ONLY the raw Mermaid syntax.
+      5. ALL nodes MUST use the exact format: NodeID["Text Label"]
+      6. Do NOT use parentheses (), circle shapes (()), or any other shapes. ALWAYS use square brackets with quotes ["..."].
+      
+      Example of CORRECT bulletproof formatting:
+      mindmap
+        root["Central Topic"]
+          branch1["Main Idea (1905)"]
+            leaf1["Detail A & B"]
+            leaf2["Detail, with commas"]
+          branch2["Another Idea"]
+            leaf3["Final Detail"]
+      
+      Material: ${content || "[Extract entirely from the attached file.]"}
     `;
 
-    const promptParts = [prompt];
-    const filePart = await getGeminiFilePart(fileUrl);
-    if (filePart) promptParts.push(filePart);
+    promptParts.push(prompt);
 
     const result = await model.generateContent(promptParts);
-    let mermaidCode = result.response.text().trim();
-
-    // Clean up potential markdown formatting if the model still includes it
-    if (mermaidCode.startsWith('```mermaid')) {
-        mermaidCode = mermaidCode.replace(/```mermaid\n?/g, '').replace(/```\n?/g, '').trim();
-    } else if (mermaidCode.startsWith('```')) {
-        mermaidCode = mermaidCode.replace(/```\n?/g, '').trim();
+    
+    let mermaidCode;
+    try {
+      const data = JSON.parse(result.response.text());
+      mermaidCode = data.mermaid;
+    } catch (err) {
+      console.error("JSON parse failed for mindmap:", err);
+      return { success: false, error: "Failed to parse mindmap response" };
     }
 
     const supabase = await getSupabaseServerClient();
-
     const { data: existingData } = await supabase
       .from('flowcharts')
       .select('id')
@@ -362,18 +389,12 @@ export async function generateMindMap(setId, content, fileUrl) {
 
     let dbResult;
     if (existingData) {
-      dbResult = await supabase
-        .from('flowcharts')
-        .update({ mermaid_code: mermaidCode })
-        .eq('id', existingData.id);
+      dbResult = await supabase.from('flowcharts').update({ mermaid_code: mermaidCode }).eq('id', existingData.id);
     } else {
-      dbResult = await supabase
-        .from('flowcharts')
-        .insert({ study_set_id: setId, mermaid_code: mermaidCode });
+      dbResult = await supabase.from('flowcharts').insert({ study_set_id: setId, mermaid_code: mermaidCode });
     }
 
     if (dbResult.error) throw dbResult.error;
-
     return { success: true, data: mermaidCode };
   } catch (error) {
     console.error("Mindmap generation failed:", error);
@@ -391,61 +412,62 @@ export async function generateFlashcards(setId, content, fileUrl) {
 
   try {
     const model = genAI.getGenerativeModel({ 
-      model: "gemini-2.5-flash",
-      generationConfig: { responseMimeType: "application/json" }
+      model: "gemini-2.5-flash-lite",
+      generationConfig: { 
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: "object",
+          properties: {
+            flashcards: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  question: { type: "string" },
+                  answer:   { type: "string" },
+                },
+                required: ["question", "answer"]
+              }
+            }
+          },
+          required: ["flashcards"]
+        }
+      }
     });
 
+    const promptParts = [];
+    if (fileUrl) {
+      const filePart = await getGeminiFilePart(fileUrl);
+      if (filePart) promptParts.push(filePart);
+    }
+
     const prompt = `
-      Create 10-15 flashcards for the following study material.
-      Return a JSON array of objects, where each object has:
-      - question: The front of the card
-      - answer: The back of the card
-      
-      Material: ${content}
+      Create 10-15 detailed flashcards for the following material.
+      Material: ${content || "[Extract from attached file.]"}
     `;
 
-    const promptParts = [prompt];
-    const filePart = await getGeminiFilePart(fileUrl);
-    if (filePart) promptParts.push(filePart);
+    promptParts.push(prompt);
 
     const result = await model.generateContent(promptParts);
-    const text = result.response.text();
     
     let flashcards;
     try {
-      flashcards = JSON.parse(text);
-    } catch (e) {
-      const jsonMatch = text.match(/\[[\s\S]*\]/);
-      if (jsonMatch) {
-        flashcards = JSON.parse(jsonMatch[0]);
-      } else {
-        throw new Error("Failed to parse flashcards JSON");
-      }
+      const data = JSON.parse(result.response.text());
+      flashcards = data.flashcards;
+    } catch (err) {
+      console.error("JSON parse failed for flashcards:", err);
+      return { success: false, error: "Failed to parse flashcards response" };
     }
 
     const supabase = await getSupabaseServerClient();
-    
-    // Check if flashcards already exist for this set
-    const { data: existingData } = await supabase
-      .from('flashcards')
-      .select('id')
-      .eq('study_set_id', setId)
-      .single();
+    const { data: existingData } = await supabase.from('flashcards').select('id').eq('study_set_id', setId).single();
 
-    let dbResult;
     if (existingData) {
-      dbResult = await supabase
-        .from('flashcards')
-        .update({ cards: flashcards })
-        .eq('id', existingData.id);
+      await supabase.from('flashcards').update({ cards: flashcards }).eq('id', existingData.id);
     } else {
-      dbResult = await supabase
-        .from('flashcards')
-        .insert({ study_set_id: setId, cards: flashcards });
+      await supabase.from('flashcards').insert({ study_set_id: setId, cards: flashcards });
     }
 
-    if (dbResult.error) throw dbResult.error;
-    
     return { success: true, data: flashcards };
   } catch (error) {
     console.error("Flashcard generation failed:", error);
@@ -463,63 +485,64 @@ export async function generateQuiz(setId, content, fileUrl) {
 
   try {
     const model = genAI.getGenerativeModel({ 
-      model: "gemini-2.5-flash",
-      generationConfig: { responseMimeType: "application/json" }
+      model: "gemini-2.5-flash-lite",
+      generationConfig: { 
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: "object",
+          properties: {
+            quiz: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  question: { type: "string" },
+                  options:  { type: "array", items: { type: "string" } },
+                  answer:   { type: "string" },
+                  explanation: { type: "string" },
+                },
+                required: ["question", "options", "answer", "explanation"]
+              }
+            }
+          },
+          required: ["quiz"]
+        }
+      }
     });
 
+    const promptParts = [];
+    if (fileUrl) {
+      const filePart = await getGeminiFilePart(fileUrl);
+      if (filePart) promptParts.push(filePart);
+    }
+
     const prompt = `
-      Create a 10-question multiple choice quiz for the following material.
-      Return a JSON array of objects, where each object has:
-      - question: The question text
-      - options: Array of 4 strings
-      - correctAnswer: The correct string from the options
-      - explanation: A brief explanation why it's correct
-      
-      Material: ${content}
+      Create a 10-question multiple choice quiz.
+      Material: ${content || "[Extract from attached file.]"}
     `;
 
-    const promptParts = [prompt];
-    const filePart = await getGeminiFilePart(fileUrl);
-    if (filePart) promptParts.push(filePart);
+    promptParts.push(prompt);
 
     const result = await model.generateContent(promptParts);
-    const text = result.response.text();
-
+    
     let quiz;
     try {
-      quiz = JSON.parse(text);
-    } catch (e) {
-      const jsonMatch = text.match(/\[[\s\S]*\]/);
-      if (jsonMatch) {
-        quiz = JSON.parse(jsonMatch[0]);
-      } else {
-        throw new Error("Failed to parse quiz JSON");
-      }
+      const data = JSON.parse(result.response.text());
+      quiz = data.quiz;
+    } catch (err) {
+      console.error("JSON parse failed for quiz:", err);
+      return { success: false, error: "Failed to parse quiz response" };
     }
 
     const supabase = await getSupabaseServerClient();
-    
-    // Check if quiz already exists for this set
-    const { data: existingData } = await supabase
-      .from('quizzes')
-      .select('id')
-      .eq('study_set_id', setId)
-      .single();
+    const { data: existingData } = await supabase.from('quizzes').select('id').eq('study_set_id', setId).single();
 
-    let dbResult;
     if (existingData) {
-      dbResult = await supabase
-        .from('quizzes')
-        .update({ payload: quiz })
-        .eq('id', existingData.id);
+      await supabase.from('quizzes').update({ payload: quiz }).eq('id', existingData.id);
     } else {
-      dbResult = await supabase
-        .from('quizzes')
-        .insert({ study_set_id: setId, payload: quiz });
+      await supabase.from('quizzes').insert({ study_set_id: setId, payload: quiz });
     }
 
-    if (dbResult.error) throw dbResult.error;
-    
     return { success: true, data: quiz };
   } catch (error) {
     console.error("Quiz generation failed:", error);
@@ -532,54 +555,27 @@ export async function deleteStudySet(id) {
     const supabase = await getSupabaseServerClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
-    if (authError || !user) {
-      throw new Error("Authentication required");
-    }
+    if (authError || !user) throw new Error("Authentication required");
 
-    const { error } = await supabase
-      .from('study_sets')
-      .delete()
-      .eq('id', id)
-      .eq('user_id', user.id);
-
+    const { error } = await supabase.from('study_sets').delete().eq('id', id).eq('user_id', user.id);
     if (error) throw error;
     return { success: true };
     } catch (error) {
-    console.error("Failed to delete study set:", error.message);
     return { success: false, error: error.message };
     }
 }
 
 export async function generateQuickNote(question, correctAnswer, content) {
   const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    return { success: false, error: "GEMINI_API_KEY is not defined" };
-  }
+  if (!apiKey) return { success: false, error: "API Key missing" };
 
   const genAI = new GoogleGenerativeAI(apiKey);
-
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-
-    const prompt = `
-      You are an expert tutor. A student incorrectly answered the following question.
-      
-      Question: "${question}"
-      Correct Answer: "${correctAnswer}"
-      
-      Based on the following source material, provide a short, highly-focused, and easy-to-understand study note explaining the concept behind this question. Use markdown formatting to make it readable.
-      Keep it brief and encouraging.
-
-      Source Material:
-      ${content}
-    `;
-
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
+    const prompt = `Provide a short study note for: Question: "${question}", Correct Answer: "${correctAnswer}". Material: ${content}`;
     const result = await model.generateContent(prompt);
-    const text = result.response.text();
-
-    return { success: true, data: text };
+    return { success: true, data: result.response.text() };
   } catch (error) {
-    console.error("Quick note generation failed:", error);
     return { success: false, error: error.message };
   }
 }

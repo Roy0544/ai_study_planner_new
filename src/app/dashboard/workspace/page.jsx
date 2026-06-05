@@ -10,6 +10,15 @@ import { Separator } from "@/components/ui/separator";
 import SmoothTab from "@/components/kokonutui/smooth-tab";
 import CardFlip from "@/components/kokonutui/card-flip";
 import { MermaidDiagram } from "@/components/ui/mermaid-diagram";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState, useMemo } from "react";
 import { fetchStudySetById, generateFlashcards, generateQuiz, generateMindMap, generateQuickNote } from "@/actions/study-set";
@@ -30,16 +39,30 @@ export default function WorkspacePage() {
   const [mindmapsViewed, setMindmapsViewed] = useState(false);
   const [flashcardsFlipped, setFlashcardsFlipped] = useState([]);
 
+  // Notes Pagination State
+  const [currentNotePage, setCurrentNotePage] = useState(0);
+
+  // Flashcards Pagination State
+  const [currentFlashcardPage, setCurrentFlashcardPage] = useState(0);
+
   // Quiz State
   const [currentQuizIndex, setCurrentQuizIndex] = useState(0);
   const [quizAnswers, setQuizAnswers] = useState({});
   const [showQuizResult, setShowQuizResult] = useState(false);
   const [learningNotes, setLearningNotes] = useState({});
+  const [currentQuizResultPage, setCurrentQuizResultPage] = useState(0);
 
   const totalNotesSections = useMemo(() => {
     if (!studySet?.summary) return 0;
     const matches = studySet.summary.match(/^##\s+(.+)$/gm);
     return matches ? matches.length : 0;
+  }, [studySet?.summary]);
+
+  const noteChapters = useMemo(() => {
+    if (!studySet?.summary) return [];
+    // Split by "## " but keep the delimiter
+    const parts = studySet.summary.split(/(?=^##\s+)/m);
+    return parts.filter(p => p.trim() !== "");
   }, [studySet?.summary]);
 
   useEffect(() => {
@@ -54,6 +77,9 @@ export default function WorkspacePage() {
           setCheckedSections(parsed.checkedSections || []);
           setMindmapsViewed(parsed.mindmapsViewed || false);
           setFlashcardsFlipped(parsed.flashcardsFlipped || []);
+          setCurrentNotePage(parsed.currentNotePage || 0);
+          setCurrentFlashcardPage(parsed.currentFlashcardPage || 0);
+          setCurrentQuizResultPage(parsed.currentQuizResultPage || 0);
         } catch (e) {
           console.error("Failed to load saved mastery state", e);
         }
@@ -69,10 +95,13 @@ export default function WorkspacePage() {
         showQuizResult,
         checkedSections,
         mindmapsViewed,
-        flashcardsFlipped
+        flashcardsFlipped,
+        currentNotePage,
+        currentFlashcardPage,
+        currentQuizResultPage
       };
       
-      const hasProgress = Object.keys(quizAnswers).length > 0 || currentQuizIndex > 0 || showQuizResult || checkedSections.length > 0 || mindmapsViewed || flashcardsFlipped.length > 0;
+      const hasProgress = Object.keys(quizAnswers).length > 0 || currentQuizIndex > 0 || showQuizResult || checkedSections.length > 0 || mindmapsViewed || flashcardsFlipped.length > 0 || currentNotePage > 0 || currentFlashcardPage > 0;
 
       if (!hasProgress) {
         localStorage.removeItem(`masteryState-${setId}`);
@@ -80,7 +109,7 @@ export default function WorkspacePage() {
         localStorage.setItem(`masteryState-${setId}`, JSON.stringify(stateToSave));
       }
     }
-  }, [currentQuizIndex, quizAnswers, showQuizResult, checkedSections, mindmapsViewed, flashcardsFlipped, setId]);
+  }, [currentQuizIndex, quizAnswers, showQuizResult, checkedSections, mindmapsViewed, flashcardsFlipped, currentNotePage, currentFlashcardPage, currentQuizResultPage, setId]);
 
   const overallMastery = useMemo(() => {
     let score = 0;
@@ -100,19 +129,19 @@ export default function WorkspacePage() {
     
     // Quiz (25%)
     if (studySet?.quiz?.length > 0) {
-       const correctAnswers = Object.values(quizAnswers).filter(a => a.isCorrect).length;
-       score += (correctAnswers / studySet.quiz.length) * 25;
+       const correctAnswersCount = Object.values(quizAnswers).filter(a => a.isCorrect).length;
+       score += (correctAnswersCount / studySet.quiz.length) * 25;
     }
     
     return Math.round(score);
   }, [checkedSections, totalNotesSections, mindmapsViewed, flashcardsFlipped, quizAnswers, studySet]);
 
-  const handleLearnMore = async (index, question, correctAnswer) => {
+  const handleLearnMore = async (index, question, answer) => {
     if (learningNotes[index]) return;
     setLearningNotes(prev => ({ ...prev, [index]: { loading: true, note: null } }));
     
     const content = studySet.materials?.input_prompt || studySet.summary;
-    const result = await generateQuickNote(question, correctAnswer, content);
+    const result = await generateQuickNote(question, answer, content);
     
     setLearningNotes(prev => ({ 
       ...prev, 
@@ -162,6 +191,8 @@ export default function WorkspacePage() {
   const workspaceTabs = useMemo(() => {
     if (!studySet) return [];
     
+    const totalFlashcardPages = studySet.flashcards ? Math.ceil(studySet.flashcards.length / 6) : 0;
+
     return [
       {
         id: "notes",
@@ -169,20 +200,67 @@ export default function WorkspacePage() {
         description: "Quick summary of key concepts",
         color: "bg-blue-500",
         content: (
-          <ScrollArea className="h-full w-full p-8">
-            <MarkdownRenderer 
-              content={studySet.summary} 
-              className="max-w-3xl mx-auto pb-12"
-              checkedSections={checkedSections}
-              onToggleSection={(sectionTitle) => {
-                setCheckedSections(prev => 
-                  prev.includes(sectionTitle) 
-                    ? prev.filter(t => t !== sectionTitle)
-                    : [...prev, sectionTitle]
-                );
-              }}
-            />
-          </ScrollArea>
+          <div className="h-full flex flex-col">
+            <ScrollArea className="flex-1 p-8">
+              <MarkdownRenderer 
+                content={noteChapters[currentNotePage] || studySet.summary} 
+                className="max-w-3xl mx-auto pb-12"
+                checkedSections={checkedSections}
+                onToggleSection={(sectionTitle) => {
+                  setCheckedSections(prev => 
+                    prev.includes(sectionTitle) 
+                      ? prev.filter(t => t !== sectionTitle)
+                      : [...prev, sectionTitle]
+                  );
+                }}
+              />
+            </ScrollArea>
+            
+            {noteChapters.length > 1 && (
+              <div className="p-4 border-t border-border/50 flex items-center justify-center bg-muted/20 shrink-0">
+                <Pagination>
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious 
+                        href="#" 
+                        onClick={(e) => {
+                          e.preventDefault();
+                          if (currentNotePage > 0) setCurrentNotePage(prev => prev - 1);
+                        }}
+                        className={cn(currentNotePage === 0 && "pointer-events-none opacity-50")}
+                      />
+                    </PaginationItem>
+                    
+                    {noteChapters.map((_, idx) => (
+                      <PaginationItem key={idx} className="hidden md:inline-block">
+                        <PaginationLink 
+                          href="#" 
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setCurrentNotePage(idx);
+                          }}
+                          isActive={currentNotePage === idx}
+                        >
+                          {idx + 1}
+                        </PaginationLink>
+                      </PaginationItem>
+                    ))}
+
+                    <PaginationItem>
+                      <PaginationNext 
+                        href="#" 
+                        onClick={(e) => {
+                          e.preventDefault();
+                          if (currentNotePage < noteChapters.length - 1) setCurrentNotePage(prev => prev + 1);
+                        }}
+                        className={cn(currentNotePage === noteChapters.length - 1 && "pointer-events-none opacity-50")}
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              </div>
+            )}
+          </div>
         )
       },
       {
@@ -191,49 +269,107 @@ export default function WorkspacePage() {
         description: "Test your memory",
         color: "bg-purple-500",
         content: (
-          <div className="h-full flex flex-col items-center justify-center p-6 border border-green-500/20 rounded-xl">
+          <div className="h-full flex flex-col">
             {!studySet.flashcards ? (
-              <div className="text-center space-y-8 flex flex-col items-center justify-center w-full max-w-[665px]  mx-auto ">
-                <div className="w-24 h-24 rounded-full bg-purple-500/10 flex items-center justify-center shrink-0  ">
-                  <span className="material-symbols-outlined text-5xl text-purple-500">style</span>
+              <div className="flex-1 flex flex-col items-center justify-center p-6">
+                <div className="text-center space-y-8 flex flex-col items-center justify-center w-full max-w-[665px]  mx-auto ">
+                  <div className="w-24 h-24 rounded-full bg-purple-500/10 flex items-center justify-center shrink-0  ">
+                    <span className="material-symbols-outlined text-5xl text-purple-500">style</span>
+                  </div>
+                  <div className="space-y-3 w-full text-center">
+                    <h3 className="text-2xl font-bold tracking-tight">Generate Flashcards</h3>
+                    <p className="text-muted-foreground text-base leading-relaxed">
+                      Turn your study materials into interactive, AI-powered flashcards for efficient active recall.
+                    </p>
+                  </div>
+                  <Button 
+                    onClick={() => handleGenerate('flashcards')} 
+                    disabled={!!generating}
+                    className="bg-purple-500 hover:bg-purple-600 text-white rounded-xl font-bold px-10 h-12 shrink-0 min-w-[220px] shadow-lg shadow-purple-500/20 text-base"
+                  >
+                    {generating === 'flashcards' && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
+                    Generate Cards
+                  </Button>
                 </div>
-                <div className="space-y-3 w-full text-center">
-                  <h3 className="text-2xl font-bold tracking-tight">Generate Flashcards</h3>
-                  <p className="text-muted-foreground text-base leading-relaxed">
-                    Turn your study materials into interactive, AI-powered flashcards for efficient active recall.
-                  </p>
-                </div>
-                <Button 
-                  onClick={() => handleGenerate('flashcards')} 
-                  disabled={!!generating}
-                  className="bg-purple-500 hover:bg-purple-600 text-white rounded-xl font-bold px-10 h-12 shrink-0 min-w-[220px] shadow-lg shadow-purple-500/20 text-base"
-                >
-                  {generating === 'flashcards' && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
-                  Generate Cards
-                </Button>
               </div>
             ) : (
-              <div className="w-full max-w-2xl space-y-8">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                   {studySet.flashcards.map((card, i) => (
-                     <CardFlip 
-                        key={i}
-                        title={`Question ${i + 1}`}
-                        subtitle={card.question}
-                        description="Answer:"
-                        features={[card.answer]}
-                        onFlip={() => {
-                          setFlashcardsFlipped(prev => {
-                            if (!prev.includes(i)) {
-                              return [...prev, i];
-                            }
-                            return prev;
-                          });
-                        }}
-                     />
-                   ))}
-                </div>
-              </div>
+              <>
+                <ScrollArea className="flex-1 p-8">
+                  <div className="max-w-5xl mx-auto pb-12">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 justify-items-center">
+                       {studySet.flashcards
+                         .slice(currentFlashcardPage * 6, (currentFlashcardPage + 1) * 6)
+                         .map((card, i) => {
+                           const actualIndex = currentFlashcardPage * 6 + i;
+                           return (
+                             <CardFlip 
+                                key={actualIndex}
+                                title={`Card ${actualIndex + 1}`}
+                                subtitle={card.question}
+                                description="Answer:"
+                                features={[card.answer]}
+                                onFlip={() => {
+                                  setFlashcardsFlipped(prev => {
+                                    if (!prev.includes(actualIndex)) {
+                                      return [...prev, actualIndex];
+                                    }
+                                    return prev;
+                                  });
+                                }}
+                             />
+                           );
+                       })}
+                    </div>
+                  </div>
+                </ScrollArea>
+
+                {studySet.flashcards.length > 6 && (
+                  <div className="p-4 border-t border-border/50 flex items-center justify-center bg-muted/20 shrink-0">
+                    <Pagination>
+                      <PaginationContent>
+                        <PaginationItem>
+                          <PaginationPrevious 
+                            href="#" 
+                            onClick={(e) => {
+                              e.preventDefault();
+                              if (currentFlashcardPage > 0) setCurrentFlashcardPage(prev => prev - 1);
+                            }}
+                            className={cn(currentFlashcardPage === 0 && "pointer-events-none opacity-50")}
+                          />
+                        </PaginationItem>
+                        
+                        {Array.from({ length: Math.ceil(studySet.flashcards.length / 6) }).map((_, idx) => (
+                          <PaginationItem key={idx} className="hidden md:inline-block">
+                            <PaginationLink 
+                              href="#" 
+                              onClick={(e) => {
+                                e.preventDefault();
+                                setCurrentFlashcardPage(idx);
+                              }}
+                              isActive={currentFlashcardPage === idx}
+                            >
+                              {idx + 1}
+                            </PaginationLink>
+                          </PaginationItem>
+                        ))}
+
+                        <PaginationItem>
+                          <PaginationNext 
+                            href="#" 
+                            onClick={(e) => {
+                              e.preventDefault();
+                              if (currentFlashcardPage < totalFlashcardPages - 1) {
+                                setCurrentFlashcardPage(prev => prev + 1);
+                              }
+                            }}
+                            className={cn(currentFlashcardPage >= totalFlashcardPages - 1 && "pointer-events-none opacity-50")}
+                          />
+                        </PaginationItem>
+                      </PaginationContent>
+                    </Pagination>
+                  </div>
+                )}
+              </>
             )}
           </div>
         )
@@ -266,7 +402,19 @@ export default function WorkspacePage() {
                  </Button>
                </div>
              ) : (
-               <div className="w-full h-full" onMouseEnter={() => setMindmapsViewed(true)} onTouchStart={() => setMindmapsViewed(true)}>
+               <div className="w-full h-full flex flex-col relative" onMouseEnter={() => setMindmapsViewed(true)} onTouchStart={() => setMindmapsViewed(true)}>
+                 <div className="absolute top-4 left-4 z-10">
+                   <Button 
+                     variant="outline" 
+                     size="sm"
+                     onClick={() => handleGenerate('mindmaps')} 
+                     disabled={!!generating}
+                     className="rounded-lg shadow-sm border-emerald-500/20 text-emerald-500 hover:bg-emerald-500/10 hover:text-emerald-600"
+                   >
+                     {generating === 'mindmaps' ? <Loader2 className="h-4 w-4 animate-spin" /> : <span className="material-symbols-outlined text-[16px] mr-1.5">refresh</span>}
+                     Regenerate
+                   </Button>
+                 </div>
                  <MermaidDiagram chart={studySet.mindmaps} />
                </div>
              )}
@@ -279,7 +427,7 @@ export default function WorkspacePage() {
         description: "Practice exam mode",
         color: "bg-amber-500",
         content: (
-          <div className="h-full flex flex-col items-center justify-center p-6">
+          <div className={cn("h-full flex flex-col p-6", !studySet.quiz && "items-center justify-center")}>
             {!studySet.quiz ? (
               <div className="text-center space-y-6 flex flex-col items-center justify-center w-full max-w-[666px] mx-auto">
                 <div className="w-20 h-20 rounded-full bg-amber-500/10 flex items-center justify-center shrink-0">
@@ -301,188 +449,245 @@ export default function WorkspacePage() {
                 </Button>
               </div>
             ) : (
-              <ScrollArea className="h-full w-full p-8">
-                {showQuizResult ? (
-                  <div className="max-w-2xl mx-auto flex flex-col items-center justify-center space-y-6 text-center pb-12">
-                    <h2 className="text-3xl font-bold">Quiz Completed!</h2>
-                    <div className="text-6xl font-bold text-amber-500">
-                      {Object.values(quizAnswers).filter(a => a.isCorrect).length} / {studySet.quiz.length}
-                    </div>
-                    <p className="text-muted-foreground">Great job! Review your performance or try again.</p>
-                    <Button 
-                      onClick={() => {
-                        setCurrentQuizIndex(0);
-                        setQuizAnswers({});
-                        setShowQuizResult(false);
-                      }}
-                      className="bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-bold px-8 h-11 shrink-0"
-                    >
-                      Restart Quiz
-                    </Button>
-
-                    {Object.entries(quizAnswers).filter(([_, a]) => !a.isCorrect).length > 0 && (
-                      <div className="w-full mt-12 space-y-6 text-left animate-in fade-in slide-in-from-bottom-4 duration-500">
-                        <Separator className="bg-muted-foreground/20" />
-                        <h3 className="text-xl font-bold text-red-500 flex items-center gap-2 pt-4">
-                           <span className="material-symbols-outlined">error</span>
-                           Review Incorrect Answers
-                        </h3>
-                        <div className="space-y-6">
-                           {Object.entries(quizAnswers)
-                             .filter(([_, a]) => !a.isCorrect)
-                             .map(([index, a]) => {
-                               const q = studySet.quiz[index];
-                               return (
-                                 <div key={index} className="bg-muted/20 p-6 rounded-2xl border border-muted-foreground/10 space-y-4">
-                                   <div className="space-y-2">
-                                     <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Question {parseInt(index) + 1}</span>
-                                     <h4 className="text-lg font-bold leading-snug">{q.question}</h4>
-                                   </div>
-                                   <div className="grid gap-2 text-sm pt-2">
-                                      <div className="flex gap-2 items-start text-red-500/90">
-                                        <span className="font-bold shrink-0">Your Answer:</span>
-                                        <span className="font-medium">{a.selected}</span>
-                                      </div>
-                                      <div className="flex gap-2 items-start text-emerald-500">
-                                        <span className="font-bold shrink-0">Correct Answer:</span>
-                                        <span className="font-medium">{q.correctAnswer}</span>
-                                      </div>
-                                   </div>
-                                   <div className="bg-background/50 p-4 rounded-xl border border-border text-sm text-muted-foreground mt-4 space-y-4">
-                                      <div>
-                                        <span className="font-bold text-foreground block mb-1">Explanation:</span>
-                                        <p className="leading-relaxed">{q.explanation}</p>
-                                      </div>
-                                      
-                                      {!learningNotes[index] ? (
-                                        <Button 
-                                          variant="outline" 
-                                          size="sm" 
-                                          className="text-xs h-8 rounded-lg border-muted-foreground/20 hover:border-amber-500/50 hover:text-amber-500"
-                                          onClick={() => handleLearnMore(index, q.question, q.correctAnswer)}
-                                        >
-                                          <span className="material-symbols-outlined mr-2 text-[14px]">psychology</span>
-                                          Learn More
-                                        </Button>
-                                      ) : learningNotes[index].loading ? (
-                                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                          <Loader2 className="h-3 w-3 animate-spin" />
-                                          Generating study note...
-                                        </div>
-                                      ) : (
-                                        <div className="pt-2 border-t border-muted-foreground/10">
-                                          <span className="font-bold text-amber-500 flex items-center gap-2 mb-2">
-                                            <span className="material-symbols-outlined text-[16px]">lightbulb</span>
-                                            AI Study Note
-                                          </span>
-                                          <div className="prose prose-sm dark:prose-invert prose-p:leading-relaxed max-w-none">
-                                            <MarkdownRenderer content={learningNotes[index].note} />
-                                          </div>
-                                        </div>
-                                      )}
-                                   </div>
-                                 </div>
-                               );
-                           })}
-                        </div>
+              <ScrollArea className="h-full w-full">
+                <div className="p-8">
+                  {showQuizResult ? (
+                    <div className="max-w-2xl mx-auto flex flex-col items-center justify-center space-y-6 text-center pb-12">
+                      <h2 className="text-3xl font-bold">Quiz Completed!</h2>
+                      <div className="text-6xl font-bold text-amber-500">
+                        {Object.values(quizAnswers).filter(a => a.isCorrect).length} / {studySet.quiz.length}
                       </div>
-                    )}
-                  </div>
-                ) : (
-                  <div className="max-w-2xl mx-auto space-y-8">
-                     <div className="flex justify-between items-center mb-6">
-                        <span className="text-sm font-bold text-muted-foreground">Question {currentQuizIndex + 1} of {studySet.quiz.length}</span>
-                        <span className="text-sm font-bold text-amber-500">Score: {Object.values(quizAnswers).filter(a => a.isCorrect).length}</span>
-                     </div>
-                     <Progress value={((currentQuizIndex) / studySet.quiz.length) * 100} className="h-2 mb-8 bg-muted" indicatorClassName="bg-amber-500" />
-                     
-                     {studySet.quiz[currentQuizIndex] && (() => {
-                        const q = studySet.quiz[currentQuizIndex];
-                        const hasAnswered = !!quizAnswers[currentQuizIndex];
-                        const selectedAnswer = hasAnswered ? quizAnswers[currentQuizIndex].selected : null;
+                      <p className="text-muted-foreground">Great job! Review your performance or try again.</p>
+                      <Button 
+                        onClick={() => {
+                          setCurrentQuizIndex(0);
+                          setQuizAnswers({});
+                          setShowQuizResult(false);
+                          setCurrentQuizResultPage(0);
+                        }}
+                        className="bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-bold px-8 h-11 shrink-0"
+                      >
+                        Restart Quiz
+                      </Button>
+
+                      {(() => {
+                        const incorrectAnswers = Object.entries(quizAnswers).filter(([_, a]) => !a.isCorrect);
+                        const itemsPerPage = 3;
+                        const totalResultPages = Math.ceil(incorrectAnswers.length / itemsPerPage);
+                        const displayedAnswers = incorrectAnswers.slice(currentQuizResultPage * itemsPerPage, (currentQuizResultPage + 1) * itemsPerPage);
+
+                        if (incorrectAnswers.length === 0) return null;
 
                         return (
-                          <div className="space-y-6">
-                            <h3 className="text-xl font-bold">{q.question}</h3>
-                            <div className="grid gap-3">
-                              {q.options.map((option, idx) => {
-                                let buttonVariant = "outline";
-                                let buttonClass = "justify-start h-auto p-4 text-left rounded-xl border-muted-foreground/10 shrink-0 ";
-                                
-                                if (hasAnswered) {
-                                  if (option === q.correctAnswer) {
-                                    buttonVariant = "default";
-                                    buttonClass += "bg-emerald-500 hover:bg-emerald-600 text-white border-emerald-500";
-                                  } else if (option === selectedAnswer) {
-                                    buttonVariant = "destructive";
-                                    buttonClass += "opacity-80";
-                                  } else {
-                                    buttonClass += "opacity-50";
-                                  }
-                                } else {
-                                  buttonClass += "hover:border-amber-500/50";
-                                }
-
-                                return (
-                                  <Button 
-                                    key={idx} 
-                                    variant={buttonVariant} 
-                                    className={buttonClass}
-                                    disabled={hasAnswered}
-                                    onClick={() => {
-                                      setQuizAnswers(prev => ({
-                                        ...prev,
-                                        [currentQuizIndex]: {
-                                          selected: option,
-                                          isCorrect: option === q.correctAnswer
-                                        }
-                                      }));
-                                    }}
-                                  >
-                                    {option}
-                                  </Button>
-                                )
-                              })}
+                          <div className="w-full mt-12 space-y-6 text-left animate-in fade-in slide-in-from-bottom-4 duration-500">
+                            <Separator className="bg-muted-foreground/20" />
+                            <h3 className="text-xl font-bold text-red-500 flex items-center gap-2 pt-4">
+                               <span className="material-symbols-outlined">error</span>
+                               Review Incorrect Answers
+                            </h3>
+                            <div className="space-y-6">
+                               {displayedAnswers.map(([index, a]) => {
+                                   const q = studySet.quiz[index];
+                                   return (
+                                     <div key={index} className="bg-muted/20 p-6 rounded-2xl border border-muted-foreground/10 space-y-4">
+                                       <div className="space-y-2">
+                                         <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Question {parseInt(index) + 1}</span>
+                                         <h4 className="text-lg font-bold leading-snug">{q.question}</h4>
+                                       </div>
+                                       <div className="grid gap-2 text-sm pt-2">
+                                          <div className="flex gap-2 items-start text-red-500/90">
+                                            <span className="font-bold shrink-0">Your Answer:</span>
+                                            <span className="font-medium whitespace-normal">{a.selected}</span>
+                                          </div>
+                                          <div className="flex gap-2 items-start text-emerald-500">
+                                            <span className="font-bold shrink-0">Correct Answer:</span>
+                                            <span className="font-medium whitespace-normal">{q.answer}</span>
+                                          </div>
+                                       </div>
+                                       <div className="bg-background/50 p-4 rounded-xl border border-border text-sm text-muted-foreground mt-4 space-y-4">
+                                          <div>
+                                            <span className="font-bold text-foreground block mb-1">Explanation:</span>
+                                            <p className="leading-relaxed whitespace-normal">{q.explanation}</p>
+                                          </div>
+                                          
+                                          {!learningNotes[index] ? (
+                                            <Button 
+                                              variant="outline" 
+                                              size="sm" 
+                                              className="text-xs h-8 rounded-lg border-muted-foreground/20 hover:border-amber-500/50 hover:text-amber-500"
+                                              onClick={() => handleLearnMore(index, q.question, q.answer)}
+                                            >
+                                              <span className="material-symbols-outlined mr-2 text-[14px]">psychology</span>
+                                              Learn More
+                                            </Button>
+                                          ) : learningNotes[index].loading ? (
+                                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                              <Loader2 className="h-3 w-3 animate-spin" />
+                                              Generating study note...
+                                            </div>
+                                          ) : (
+                                            <div className="pt-2 border-t border-muted-foreground/10">
+                                              <span className="font-bold text-amber-500 flex items-center gap-2 mb-2">
+                                                <span className="material-symbols-outlined text-[16px]">lightbulb</span>
+                                                AI Study Note
+                                              </span>
+                                              <div className="prose prose-sm dark:prose-invert prose-p:leading-relaxed max-w-none">
+                                                <MarkdownRenderer content={learningNotes[index].note} />
+                                              </div>
+                                            </div>
+                                          )}
+                                       </div>
+                                     </div>
+                                   );
+                               })}
                             </div>
-                            
-                            {hasAnswered && (
-                              <div className="mt-8 p-5 bg-muted/30 rounded-xl border border-muted-foreground/10 space-y-4">
-                                <div className="flex items-center gap-2">
-                                   <span className={`material-symbols-outlined ${quizAnswers[currentQuizIndex].isCorrect ? 'text-emerald-500' : 'text-red-500'}`}>
-                                      {quizAnswers[currentQuizIndex].isCorrect ? 'check_circle' : 'cancel'}
-                                   </span>
-                                   <span className="font-bold">
-                                      {quizAnswers[currentQuizIndex].isCorrect ? 'Correct!' : 'Incorrect'}
-                                   </span>
-                                </div>
-                                <p className="text-sm text-muted-foreground leading-relaxed">{q.explanation}</p>
-                                
-                                <Button 
-                                  className="w-full mt-4 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-bold"
-                                  onClick={() => {
-                                    if (currentQuizIndex < studySet.quiz.length - 1) {
-                                      setCurrentQuizIndex(prev => prev + 1);
-                                    } else {
-                                      setShowQuizResult(true);
-                                    }
-                                  }}
-                                >
-                                  {currentQuizIndex < studySet.quiz.length - 1 ? 'Next Question' : 'View Results'}
-                                </Button>
+
+                            {totalResultPages > 1 && (
+                              <div className="pt-8 flex justify-center">
+                                <Pagination>
+                                  <PaginationContent>
+                                    <PaginationItem>
+                                      <PaginationPrevious 
+                                        href="#" 
+                                        onClick={(e) => {
+                                          e.preventDefault();
+                                          if (currentQuizResultPage > 0) setCurrentQuizResultPage(prev => prev - 1);
+                                        }}
+                                        className={cn(currentQuizResultPage === 0 && "pointer-events-none opacity-50")}
+                                      />
+                                    </PaginationItem>
+                                    
+                                    {Array.from({ length: totalResultPages }).map((_, idx) => (
+                                      <PaginationItem key={idx} className="hidden md:inline-block">
+                                        <PaginationLink 
+                                          href="#" 
+                                          onClick={(e) => {
+                                            e.preventDefault();
+                                            setCurrentQuizResultPage(idx);
+                                          }}
+                                          isActive={currentQuizResultPage === idx}
+                                        >
+                                          {idx + 1}
+                                        </PaginationLink>
+                                      </PaginationItem>
+                                    ))}
+
+                                    <PaginationItem>
+                                      <PaginationNext 
+                                        href="#" 
+                                        onClick={(e) => {
+                                          e.preventDefault();
+                                          if (currentQuizResultPage < totalResultPages - 1) {
+                                            setCurrentQuizResultPage(prev => prev + 1);
+                                          }
+                                        }}
+                                        className={cn(currentQuizResultPage >= totalResultPages - 1 && "pointer-events-none opacity-50")}
+                                      />
+                                    </PaginationItem>
+                                  </PaginationContent>
+                                </Pagination>
                               </div>
                             )}
                           </div>
                         );
-                     })()}
-                  </div>
-                )}
+                      })()}
+                    </div>
+                  ) : (
+                    <div className="max-w-2xl mx-auto space-y-8 pb-12">
+                       <div className="flex justify-between items-center mb-6">
+                          <span className="text-sm font-bold text-muted-foreground">Question {currentQuizIndex + 1} of {studySet.quiz.length}</span>
+                          <span className="text-sm font-bold text-amber-500">Score: {Object.values(quizAnswers).filter(a => a.isCorrect).length}</span>
+                       </div>
+                       <Progress value={((currentQuizIndex) / studySet.quiz.length) * 100} className="h-2 mb-8 bg-muted" indicatorClassName="bg-amber-500" />
+                       
+                       {studySet.quiz[currentQuizIndex] && (() => {
+                          const q = studySet.quiz[currentQuizIndex];
+                          const hasAnswered = !!quizAnswers[currentQuizIndex];
+                          const selectedAnswer = hasAnswered ? quizAnswers[currentQuizIndex].selected : null;
+
+                          return (
+                            <div className="space-y-6">
+                              <h3 className="text-xl font-bold leading-tight">{q.question}</h3>
+                              <div className="grid gap-3">
+                                {q.options.map((option, idx) => {
+                                  let buttonVariant = "outline";
+                                  let buttonClass = "justify-start h-auto p-4 text-left rounded-xl border-muted-foreground/10 shrink-0 whitespace-normal break-words ";
+                                  
+                                  if (hasAnswered) {
+                                    if (option === q.answer) {
+                                      buttonVariant = "default";
+                                      buttonClass += "bg-emerald-500 hover:bg-emerald-600 text-white border-emerald-500";
+                                    } else if (option === selectedAnswer) {
+                                      buttonVariant = "destructive";
+                                      buttonClass += "opacity-80";
+                                    } else {
+                                      buttonClass += "opacity-50";
+                                    }
+                                  } else {
+                                    buttonClass += "hover:border-amber-500/50";
+                                  }
+
+                                  return (
+                                    <Button 
+                                      key={idx} 
+                                      variant={buttonVariant} 
+                                      className={buttonClass}
+                                      disabled={hasAnswered}
+                                      onClick={() => {
+                                        setQuizAnswers(prev => ({
+                                          ...prev,
+                                          [currentQuizIndex]: {
+                                            selected: option,
+                                            isCorrect: option === q.answer
+                                          }
+                                        }));
+                                      }}
+                                    >
+                                      {option}
+                                    </Button>
+                                  )
+                                })}
+                              </div>
+                              
+                              {hasAnswered && (
+                                <div className="mt-8 p-5 bg-muted/30 rounded-xl border border-muted-foreground/10 space-y-4">
+                                  <div className="flex items-center gap-2">
+                                     <span className={`material-symbols-outlined ${quizAnswers[currentQuizIndex].isCorrect ? 'text-emerald-500' : 'text-red-500'}`}>
+                                        {quizAnswers[currentQuizIndex].isCorrect ? 'check_circle' : 'cancel'}
+                                     </span>
+                                     <span className="font-bold">
+                                        {quizAnswers[currentQuizIndex].isCorrect ? 'Correct!' : 'Incorrect'}
+                                     </span>
+                                  </div>
+                                  <p className="text-sm text-muted-foreground leading-relaxed whitespace-normal">{q.explanation}</p>
+                                  
+                                  <Button 
+                                    className="w-full mt-4 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-bold"
+                                    onClick={() => {
+                                      if (currentQuizIndex < studySet.quiz.length - 1) {
+                                        setCurrentQuizIndex(prev => prev + 1);
+                                      } else {
+                                        setShowQuizResult(true);
+                                      }
+                                    }}
+                                  >
+                                    {currentQuizIndex < studySet.quiz.length - 1 ? 'Next Question' : 'View Results'}
+                                  </Button>
+                                </div>
+                              )}
+                            </div>
+                          );
+                       })()}
+                    </div>
+                  )}
+                </div>
               </ScrollArea>
             )}
           </div>
         )
       }
     ];
-  }, [studySet, generating, currentQuizIndex, quizAnswers, showQuizResult, learningNotes, checkedSections]);
+  }, [studySet, generating, currentQuizIndex, quizAnswers, showQuizResult, learningNotes, checkedSections, currentNotePage, noteChapters, currentFlashcardPage, currentQuizResultPage]);
 
   if (loading) {
     return (

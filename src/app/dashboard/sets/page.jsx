@@ -54,7 +54,7 @@ export default async function StudySetsPage() {
           </div>
           <div className="space-y-1">
             <h3 className="text-xl font-bold">No study sets yet</h3>
-            <p className="text-muted-foreground max-w-xs mx-auto text-sm">
+            <p className="text-muted-foreground  mx-auto text-sm">
               Start by creating your first AI-powered study set from your notes or files.
             </p>
           </div>
