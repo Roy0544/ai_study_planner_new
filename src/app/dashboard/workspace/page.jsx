@@ -26,7 +26,9 @@ import { getCategoryIcon, cn } from "@/lib/utils";
 import { Loader2 } from "lucide-react";
 import { MarkdownRenderer } from "@/components/ui/markdown-renderer";
 
-export default function WorkspacePage() {
+import { Suspense } from "react";
+
+function WorkspaceContent() {
   const searchParams = useSearchParams();
   const setId = searchParams.get("id");
   
@@ -855,5 +857,17 @@ export default function WorkspacePage() {
         </div>
       </div>
     </main>
+  );
+}
+
+export default function WorkspacePage() {
+  return (
+    <Suspense fallback={
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    }>
+      <WorkspaceContent />
+    </Suspense>
   );
 }
