@@ -5,6 +5,8 @@ import { HyperText } from "@/components/ui/hyper-text";
 import { Input } from "@/components/ui/input";
 import Link from "next/link";
 
+export const dynamic = 'force-dynamic';
+
 export default async function StudySetsPage() {
   const result = await fetchStudySets();
   const sets = result.success ? result.data : [];

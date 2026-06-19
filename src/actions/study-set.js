@@ -2,6 +2,7 @@
 import { GoogleGenerativeAI } from "@google/generative-ai"
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { parseOffice } from "officeparser";
 
 async function getSupabaseServerClient() {
   const cookieStore = await cookies();
@@ -87,6 +88,54 @@ async function getGeminiFilePart( fileUrl  ) {
   }
 }
 
+async function extractTextFromOfficeFile(fileUrl) {
+  if (!fileUrl) return "";
+  console.log("Attempting to extract text from Office file:", fileUrl);
+  
+  try {
+    let buffer;
+    const response = await fetch(fileUrl);
+    
+    if (response.ok) {
+      const arrayBuffer = await response.arrayBuffer();
+      buffer = Buffer.from(arrayBuffer);
+      console.log("Fetch successful for Office file. Buffer size:", buffer.length);
+    } else {
+      console.log("Direct fetch failed for Office file, trying Supabase storage download fallback...");
+      const supabase = await getSupabaseServerClient();
+      
+      const urlParts = fileUrl.split('/study-materials/');
+      if (urlParts.length < 2) throw new Error("Could not parse storage path from URL");
+      
+      const filePath = urlParts[1];
+      const { data, error } = await supabase.storage
+        .from('study-materials')
+        .download(filePath);
+        
+      if (error) throw error;
+      
+      const arrayBuffer = await data.arrayBuffer();
+      buffer = Buffer.from(arrayBuffer);
+      console.log("Fallback download successful for Office file. Buffer size:", buffer.length);
+    }
+
+    const urlLower = fileUrl.toLowerCase();
+    let fileType = undefined;
+    if (urlLower.includes('.docx')) fileType = 'docx';
+    else if (urlLower.includes('.pptx')) fileType = 'pptx';
+    else if (urlLower.includes('.xlsx')) fileType = 'xlsx';
+
+    console.log("Parsing Office file using officeparser with fileType hint:", fileType);
+    const ast = await parseOffice(buffer, fileType ? { fileType } : undefined);
+    const text = typeof ast.toText === 'function' ? ast.toText() : (ast.text || ast.content || "");
+    console.log("Office text extraction successful. Extracted text length:", text?.length);
+    return text;
+  } catch (error) {
+    console.error("Error extracting text from Office file:", error.message);
+    throw new Error(`Failed to extract text from Office file: ${error.message}`);
+  }
+}
+
 export async function generateStudySets(content, fileUrl) {
   const apiKey = process.env.GEMINI_API_KEY;
 
@@ -131,18 +180,30 @@ export async function generateStudySets(content, fileUrl) {
     });
 
     const promptParts = [];
+    let extractedText = "";
 
     if (fileUrl) {
-      const filePart = await getGeminiFilePart(fileUrl);
-      if (!filePart) {
-         throw new Error("Failed to process the uploaded file for AI analysis.");
+      const urlLower = fileUrl.toLowerCase();
+      const isOfficeFile = urlLower.includes('.pptx') || urlLower.includes('.docx') || urlLower.includes('.xlsx');
+      
+      if (isOfficeFile) {
+        extractedText = await extractTextFromOfficeFile(fileUrl);
+        if (!extractedText) {
+          throw new Error("Failed to extract content from the uploaded Office file.");
+        }
+      } else {
+        const filePart = await getGeminiFilePart(fileUrl);
+        if (!filePart) {
+          throw new Error("Failed to process the uploaded file for AI analysis.");
+        }
+        promptParts.push(filePart);
       }
-      promptParts.push(filePart);
     }
 
     const prompt = `
       Analyze the attached study material and/or the text provided below.
-      Material: ${content || "[Extract entirely from the attached file.]"}
+      ${extractedText ? `Extracted material from uploaded document:\n---\n${extractedText}\n---\n` : ""}
+      Material: ${content || (extractedText ? "[See extracted material above]" : "[Extract entirely from the attached file.]")}
     `;
 
     promptParts.push(prompt);
@@ -257,6 +318,22 @@ export async function fetchStudySets() {
   }
 }
 
+export async function getUserProfile() {
+  try {
+    const supabase = await getSupabaseServerClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return { success: false, error: "Authentication required" };
+    }
+
+    return { success: true, data: user };
+  } catch (error) {
+    console.error("Failed to fetch user profile:", error.message);
+    return { success: false, error: error.message };
+  }
+}
+
 export async function fetchStudySetById(id) {
   try {
     const supabase = await getSupabaseServerClient();
@@ -339,9 +416,21 @@ export async function generateMindMap(setId, content, fileUrl) {
     });
 
     const promptParts = [];
+    let extractedText = "";
+
     if (fileUrl) {
-      const filePart = await getGeminiFilePart(fileUrl);
-      if (filePart) promptParts.push(filePart);
+      const urlLower = fileUrl.toLowerCase();
+      const isOfficeFile = urlLower.includes('.pptx') || urlLower.includes('.docx') || urlLower.includes('.xlsx');
+      
+      if (isOfficeFile) {
+        extractedText = await extractTextFromOfficeFile(fileUrl);
+        if (!extractedText) {
+          throw new Error("Failed to extract content from the uploaded Office file.");
+        }
+      } else {
+        const filePart = await getGeminiFilePart(fileUrl);
+        if (filePart) promptParts.push(filePart);
+      }
     }
 
     const prompt = `
@@ -364,7 +453,8 @@ export async function generateMindMap(setId, content, fileUrl) {
           branch2["Another Idea"]
             leaf3["Final Detail"]
       
-      Material: ${content || "[Extract entirely from the attached file.]"}
+      ${extractedText ? `Extracted material from uploaded document:\n---\n${extractedText}\n---\n` : ""}
+      Material: ${content || (extractedText ? "[See extracted material above]" : "[Extract entirely from the attached file.]")}
     `;
 
     promptParts.push(prompt);
@@ -436,14 +526,27 @@ export async function generateFlashcards(setId, content, fileUrl) {
     });
 
     const promptParts = [];
+    let extractedText = "";
+
     if (fileUrl) {
-      const filePart = await getGeminiFilePart(fileUrl);
-      if (filePart) promptParts.push(filePart);
+      const urlLower = fileUrl.toLowerCase();
+      const isOfficeFile = urlLower.includes('.pptx') || urlLower.includes('.docx') || urlLower.includes('.xlsx');
+      
+      if (isOfficeFile) {
+        extractedText = await extractTextFromOfficeFile(fileUrl);
+        if (!extractedText) {
+          throw new Error("Failed to extract content from the uploaded Office file.");
+        }
+      } else {
+        const filePart = await getGeminiFilePart(fileUrl);
+        if (filePart) promptParts.push(filePart);
+      }
     }
 
     const prompt = `
       Create 10-15 detailed flashcards for the following material.
-      Material: ${content || "[Extract from attached file.]"}
+      ${extractedText ? `Extracted material from uploaded document:\n---\n${extractedText}\n---\n` : ""}
+      Material: ${content || (extractedText ? "[See extracted material above]" : "[Extract from attached file.]")}
     `;
 
     promptParts.push(prompt);
@@ -511,14 +614,27 @@ export async function generateQuiz(setId, content, fileUrl) {
     });
 
     const promptParts = [];
+    let extractedText = "";
+
     if (fileUrl) {
-      const filePart = await getGeminiFilePart(fileUrl);
-      if (filePart) promptParts.push(filePart);
+      const urlLower = fileUrl.toLowerCase();
+      const isOfficeFile = urlLower.includes('.pptx') || urlLower.includes('.docx') || urlLower.includes('.xlsx');
+      
+      if (isOfficeFile) {
+        extractedText = await extractTextFromOfficeFile(fileUrl);
+        if (!extractedText) {
+          throw new Error("Failed to extract content from the uploaded Office file.");
+        }
+      } else {
+        const filePart = await getGeminiFilePart(fileUrl);
+        if (filePart) promptParts.push(filePart);
+      }
     }
 
     const prompt = `
       Create a 10-question multiple choice quiz.
-      Material: ${content || "[Extract from attached file.]"}
+      ${extractedText ? `Extracted material from uploaded document:\n---\n${extractedText}\n---\n` : ""}
+      Material: ${content || (extractedText ? "[See extracted material above]" : "[Extract from attached file.]")}
     `;
 
     promptParts.push(prompt);

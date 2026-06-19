@@ -49,6 +49,12 @@ export default function AI_Input_Search({
   const handleFileChange = (e) => {
     const selectedFile = e.target.files?.[0];
     if (selectedFile) {
+      const allowedExtensions = ['pdf', 'txt', 'docx', 'pptx', 'xlsx', 'png', 'jpg', 'jpeg', 'webp'];
+      const fileExt = selectedFile.name.split('.').pop()?.toLowerCase();
+      if (!allowedExtensions.includes(fileExt)) {
+        alert("Unsupported file format! Please upload PDF, TXT, Word (.docx), PowerPoint (.pptx), Excel (.xlsx) or Image files (PNG, JPG, WEBP).");
+        return;
+      }
       setFile(selectedFile);
     }
   };
@@ -112,7 +118,12 @@ export default function AI_Input_Search({
                 "cursor-pointer rounded-lg p-2 transition-all",
                 file ? "bg-violet-500/15 text-violet-500" : "bg-black/5 dark:bg-white/5 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white"
               )}>
-                <input className="hidden" type="file" onChange={handleFileChange} />
+                <input 
+                  className="hidden" 
+                  type="file" 
+                  accept=".pdf,.txt,.docx,.pptx,.xlsx,.png,.jpg,.jpeg,.webp" 
+                  onChange={handleFileChange} 
+                />
                 <Paperclip className="h-4 w-4" />
               </label>
               {file && (
