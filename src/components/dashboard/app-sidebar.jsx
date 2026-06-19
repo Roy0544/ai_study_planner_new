@@ -15,6 +15,7 @@ import { usePathname } from "next/navigation";
 import { MagicCard } from "@/components/ui/magic-card";
 import { BorderBeam } from "@/components/ui/magic-card";
 import { AnimatedGradientText } from "@/components/ui/animated-gradient-text";
+import { CreditsWidget } from "@/components/dashboard/credits-widget";
 
 export function AppSidebar() {
   const pathname = usePathname();
@@ -80,19 +81,8 @@ export function AppSidebar() {
           </div>
         </div>
 
-        {/* Upgrade Block */}
-        <div className="p-4 rounded-xl bg-muted/30 border border-muted-foreground/10 space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Free Plan</span>
-            <span className="text-[10px] font-bold text-foreground">3 / 5 sets</span>
-          </div>
-          <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
-            <div className="h-full bg-primary w-[60%] rounded-full" />
-          </div>
-          <Button className="w-full h-8 text-[11px] font-bold rounded-lg shadow-sm" size="sm">
-            Upgrade to Pro
-          </Button>
-        </div>
+        {/* Credits Widget */}
+        <CreditsWidget />
       </SidebarFooter>
     </Sidebar>
   );
