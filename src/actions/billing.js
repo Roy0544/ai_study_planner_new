@@ -215,3 +215,115 @@ export async function deductCredits(taskType) {
     return { success: false, error: error.message };
   }
 }
+
+// ─── Get user transaction logs from Supabase ───────────────────────────────
+
+export async function getUserTransactions() {
+  try {
+    const supabase = await getSupabaseServerClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) return { success: false, error: "Not authenticated" };
+
+    const { data: transactions, error } = await supabase
+      .from("credit_transactions")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      // Fallback to adminClient in case of RLS constraints
+      const adminClient = getSupabaseAdminClient();
+      const { data: adminTransactions, error: adminError } = await adminClient
+        .from("credit_transactions")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
+
+      if (adminError) throw adminError;
+      return { success: true, data: adminTransactions };
+    }
+
+    return { success: true, data: transactions };
+  } catch (error) {
+    console.error("Failed to get user transactions:", error.message);
+    return { success: false, error: error.message };
+  }
+}
+
+// ─── Redeem a promo code / voucher ──────────────────────────────────────────
+export async function redeemVoucher(code) {
+  try {
+    const codeClean = code.trim().toUpperCase();
+    let reward = 0;
+    if (codeClean === "WELCOME20") {
+      reward = 20;
+    } else if (codeClean === "POWER30") {
+      reward = 30;
+    } else {
+      return { success: false, error: "Invalid or expired promo code" };
+    }
+
+    const supabase = await getSupabaseServerClient();
+    const adminClient = getSupabaseAdminClient();
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) throw new Error("Authentication required");
+
+    // 1. Check if user already redeemed this specific code in credit_transactions
+    const { data: existingTx, error: txError } = await adminClient
+      .from("credit_transactions")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("type", "bonus")
+      .like("description", `%Redeemed Promo Code: ${codeClean}%`);
+
+    if (txError) throw txError;
+    if (existingTx && existingTx.length > 0) {
+      return { success: false, error: `Promo code ${codeClean} has already been redeemed.` };
+    }
+
+    // 2. Fetch current credit balance
+    const { data: profile, error: profileError } = await adminClient
+      .from("profiles")
+      .select("credits")
+      .eq("id", user.id)
+      .single();
+
+    if (profileError) throw profileError;
+
+    const newCredits = (profile?.credits || 0) + reward;
+
+    // 3. Update profile credits balance
+    const { error: updateError } = await adminClient
+      .from("profiles")
+      .update({ credits: newCredits, updated_at: new Date().toISOString() })
+      .eq("id", user.id);
+
+    if (updateError) throw updateError;
+
+    // 4. Record transaction log
+    const { data: transaction, error: insertError } = await adminClient
+      .from("credit_transactions")
+      .insert({
+        user_id: user.id,
+        type: "bonus",
+        amount: reward,
+        description: `Redeemed Promo Code: ${codeClean} (+${reward} credits)`,
+      })
+      .select()
+      .single();
+
+    if (insertError) throw insertError;
+
+    return { 
+      success: true, 
+      newCredits, 
+      reward, 
+      transaction 
+    };
+  } catch (error) {
+    console.error("Voucher redemption failed:", error.message);
+    return { success: false, error: error.message };
+  }
+}
+

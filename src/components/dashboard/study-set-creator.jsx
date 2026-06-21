@@ -14,11 +14,13 @@ import { createFullStudySet } from "@/actions/study-set";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { uploadHandler } from "@/config/client";
+import { InsufficientCreditsModal } from "@/components/dashboard/insufficient-credits-modal";
 
 
 export function StudySetCreator() {
   const [status, setStatus] = useState(null); // null, 'uploading', 'generating'
   const [result, setResult] = useState(null);
+  const [creditsModal, setCreditsModal] = useState({ isOpen: false, required: 5, action: "" });
   const router = useRouter();
 
   const handleGenerate = async (data) => {
@@ -47,14 +49,21 @@ export function StudySetCreator() {
 
       console.log("Submitting study set creation request...");
       const response = await createFullStudySet(formData);
-      
-      if (response.success) {
-        console.log("Study set created successfully:", response.data.title);
-        setResult(response.data);
-      } else {
-        console.error("Error generating:", response.error);
-        alert(`Failed to generate study set: ${response.error}`);
+      if (!response.success) {
+        if (response.insufficientCredits) {
+          setCreditsModal({
+            isOpen: true,
+            required: 5,
+            action: "Create Study Set"
+          });
+        } else {
+          alert(response.error);
+        }
+        return;
       }
+      console.log("Study set created successfully:", response.data.title);
+      setResult(response.data);
+      window.dispatchEvent(new Event("credits-updated"));
     } catch (err) {
       console.error("Submission failed:", err);
       alert(`Error: ${err.message || "An unexpected error occurred. Please try again."}`);
@@ -79,6 +88,10 @@ export function StudySetCreator() {
             disabled={!!status}
           />
         </div>
+        <p className="text-[10px] text-muted-foreground/60 text-right px-1 flex items-center justify-end gap-1 select-none">
+          <span className="material-symbols-outlined text-[12px] text-primary">toll</span>
+          Generating a full suite costs 5 credits
+        </p>
 
         {status === 'uploading' && (
           <div className="flex items-center gap-2 text-sm text-blue-500 animate-pulse bg-blue-500/5 p-3 rounded-xl border border-blue-500/20">
@@ -112,6 +125,13 @@ export function StudySetCreator() {
             </Button>
           </div>
         )}
+
+        <InsufficientCreditsModal
+          isOpen={creditsModal.isOpen}
+          onClose={() => setCreditsModal(prev => ({ ...prev, isOpen: false }))}
+          requiredCredits={creditsModal.required}
+          actionName={creditsModal.action}
+        />
       </CardContent>
     </Card>
   );

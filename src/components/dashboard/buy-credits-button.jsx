@@ -24,7 +24,7 @@ function loadRazorpayScript() {
   });
 }
 
-export function BuyCreditsButton({ currentCredits = 0, onSuccess }) {
+export function BuyCreditsButton({ currentCredits = 0, onSuccess, isLow = false }) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(null); // packageId being processed
 
@@ -99,7 +99,12 @@ export function BuyCreditsButton({ currentCredits = 0, onSuccess }) {
       <DialogTrigger asChild>
         <Button
           size="sm"
-          className="w-full h-8 text-[11px] font-bold rounded-lg shadow-sm"
+          className={cn(
+            "w-full h-8 text-[11px] font-bold rounded-lg shadow-sm transition-all",
+            isLow 
+              ? "bg-amber-500 hover:bg-amber-600 text-white animate-pulse shadow-md shadow-amber-500/20"
+              : "bg-primary text-primary-foreground"
+          )}
         >
           <span className="material-symbols-outlined text-[14px] mr-1">
             add_circle

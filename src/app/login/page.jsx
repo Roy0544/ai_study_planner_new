@@ -54,7 +54,7 @@ export default function LoginPage() {
       
       if (!loginError) {
         console.log("Login successful:", data);
-        router.push("/dashboard");
+        window.location.href = "/dashboard";
       } else {
         console.error("Login failed:", loginError.message);
         setError(loginError.message);

@@ -3,6 +3,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai"
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { parseOffice } from "officeparser";
+import { deductCredits } from "./billing";
 
 async function getSupabaseServerClient() {
   const cookieStore = await cookies();
@@ -231,6 +232,14 @@ export async function createFullStudySet(formData) {
   const fileUrl = formData.get('fileUrl'); // Received from client upload
 
   console.log("Starting complete study set creation process...");
+   const creditCheck = await deductCredits("study_set");                                                                                            
+      if (!creditCheck.success) {                                                                                                                    
+        return {                                                                                                                                     
+          success: false,                                                                                                                            
+          insufficientCredits: true,                                                                                                                 
+          error: creditCheck.error // e.g., "You need 2 credits for this action, but you only have X."                                               
+        };                                                                                                                                           
+      }  
 
   try {
     const supabase = await getSupabaseServerClient();
@@ -259,6 +268,7 @@ export async function createFullStudySet(formData) {
     }
 
     console.log("Material saved with ID:", material.id);
+
 
     // 2. Generate AI Content using the provided text AND the fileUrl
     const aiResult = await generateStudySets(text, fileUrl);
@@ -393,6 +403,14 @@ export async function fetchStudySetById(id) {
 }
 
 export async function generateMindMap(setId, content, fileUrl) {
+   const creditCheck = await deductCredits("mindmap");                                                                                            
+      if (!creditCheck.success) {                                                                                                                    
+        return {                                                                                                                                     
+          success: false,                                                                                                                            
+          insufficientCredits: true,                                                                                                                 
+          error: creditCheck.error // e.g., "You need 2 credits for this action, but you only have X."                                               
+        };                                                                                                                                           
+      }  
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     return { success: false, error: "apiKey is not defined" };
@@ -493,6 +511,14 @@ export async function generateMindMap(setId, content, fileUrl) {
 }
 
 export async function generateFlashcards(setId, content, fileUrl) {
+   const creditCheck = await deductCredits("flashcards");                                                                                            
+      if (!creditCheck.success) {                                                                                                                    
+        return {                                                                                                                                     
+          success: false,                                                                                                                            
+          insufficientCredits: true,                                                                                                                 
+          error: creditCheck.error // e.g., "You need 2 credits for this action, but you only have X."                                               
+        };                                                                                                                                           
+      }  
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     return { success: false, error: "GEMINI_API_KEY is not defined" };
@@ -579,6 +605,14 @@ export async function generateFlashcards(setId, content, fileUrl) {
 }
 
 export async function generateQuiz(setId, content, fileUrl) {
+   const creditCheck = await deductCredits("quiz");                                                                                            
+      if (!creditCheck.success) {                                                                                                                    
+        return {                                                                                                                                     
+          success: false,                                                                                                                            
+          insufficientCredits: true,                                                                                                                 
+          error: creditCheck.error // e.g., "You need 2 credits for this action, but you only have X."                                               
+        };                                                                                                                                           
+      }  
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     return { success: false, error: "GEMINI_API_KEY is not defined" };

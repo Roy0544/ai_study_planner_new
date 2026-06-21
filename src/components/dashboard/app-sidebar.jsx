@@ -28,7 +28,7 @@ export function AppSidebar() {
             <span className="material-symbols-outlined text-2xl">auto_awesome</span>
           </div>
           <div className="flex flex-col">
-            <span className="text-lg font-bold leading-none tracking-tight">StudyAI</span>
+            <span className="text-lg font-bold leading-none tracking-tight">GKVK_AI</span>
             <span className="text-[10px] text-muted-foreground mt-1.5 font-medium tracking-wider uppercase">v1.0.4 Beta</span>
           </div>
         </Link>
@@ -53,18 +53,10 @@ export function AppSidebar() {
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
-            <SidebarMenuButton asChild isActive={pathname === "/dashboard/analytics"} tooltip="Analytics" className="h-11 rounded-xl data-[active=true]:bg-secondary/10 data-[active=true]:text-[#8B5CF6] hover:text-secondary hover:bg-secondary/5 transition-all">
-              <Link href="/dashboard/analytics">
-                <span className="material-symbols-outlined mr-2">insights</span>
-                <span className="font-medium">Analytics</span>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-          <SidebarMenuItem>
-            <SidebarMenuButton asChild isActive={pathname === "/dashboard/settings"} tooltip="Settings" className="h-11 rounded-xl data-[active=true]:bg-secondary/10 data-[active=true]:text-[#8B5CF6] hover:text-secondary hover:bg-secondary/5 transition-all">
-              <Link href="/dashboard/settings">
-                <span className="material-symbols-outlined mr-2">settings</span>
-                <span className="font-medium">Settings</span>
+            <SidebarMenuButton asChild isActive={pathname === "/dashboard/billing"} tooltip="Billing" className="h-11 rounded-xl data-[active=true]:bg-secondary/10 data-[active=true]:text-[#8B5CF6] hover:text-secondary hover:bg-secondary/5 transition-all">
+              <Link href="/dashboard/billing">
+                <span className="material-symbols-outlined mr-2">payments</span>
+                <span className="font-medium">Billing & Credits</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
@@ -72,14 +64,7 @@ export function AppSidebar() {
       </SidebarContent>
 
       <SidebarFooter className="p-4 space-y-4 mb-4">
-        {/* Streak Indicator */}
-        <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-500">
-          <span className="material-symbols-outlined text-xl animate-pulse">local_fire_department</span>
-          <div className="flex flex-col">
-            <span className="text-xs font-bold leading-none">7-day streak</span>
-            <span className="text-[10px] opacity-70 mt-0.5">Keep it up!</span>
-          </div>
-        </div>
+
 
         {/* Credits Widget */}
         <CreditsWidget />

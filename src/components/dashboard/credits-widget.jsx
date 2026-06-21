@@ -2,8 +2,9 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { getUserCredits } from "@/actions/billing";
-import { BuyCreditsButton } from "@/components/dashboard/buy-credits-button";
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 export function CreditsWidget() {
   const [credits, setCredits] = useState(null);
@@ -37,6 +38,8 @@ export function CreditsWidget() {
     setCredits(newCredits);
   };
 
+  const isLow = credits !== null && credits < 5;
+
   return (
     <div className="p-4 rounded-xl bg-muted/30 border border-muted-foreground/10 space-y-3">
       <div className="flex items-center justify-between">
@@ -60,15 +63,31 @@ export function CreditsWidget() {
       {/* Credits progress bar */}
       <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
         <div
-          className="h-full bg-primary rounded-full transition-all duration-500"
+          className={cn(
+            "h-full rounded-full transition-all duration-500",
+            isLow ? "bg-amber-500" : "bg-primary"
+          )}
           style={{ width: `${Math.min(((credits ?? 0) / 100) * 100, 100)}%` }}
         />
       </div>
 
-      <BuyCreditsButton
-        currentCredits={credits ?? 0}
-        onSuccess={handlePurchaseSuccess}
-      />
+      <Button
+        size="sm"
+        asChild
+        className={cn(
+          "w-full h-8 text-[11px] font-bold rounded-lg shadow-sm transition-all",
+          isLow 
+            ? "bg-amber-500 hover:bg-amber-600 text-white animate-pulse shadow-md shadow-amber-500/20"
+            : "bg-primary text-primary-foreground"
+        )}
+      >
+        <Link href="/dashboard/billing">
+          <span className="material-symbols-outlined text-[14px] mr-1">
+            add_circle
+          </span>
+          Buy Credits
+        </Link>
+      </Button>
     </div>
   );
 }

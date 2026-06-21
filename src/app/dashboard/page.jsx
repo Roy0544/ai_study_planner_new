@@ -1,4 +1,5 @@
 import { fetchStudySets, getUserProfile } from "@/actions/study-set";
+import { getUserCredits, getUserTransactions } from "@/actions/billing";
 import { StudySetCreator } from "@/components/dashboard/study-set-creator";
 import { RecentStudySets } from "@/components/dashboard/recent-study-sets";
 import { HyperText } from "@/components/ui/hyper-text";
@@ -6,13 +7,19 @@ import { HyperText } from "@/components/ui/hyper-text";
 export const dynamic = 'force-dynamic';
 
 export default async function DashboardPage() {
-  const [setsResult, userResult] = await Promise.all([
+  const [setsResult, userResult, creditsResult, txResult] = await Promise.all([
     fetchStudySets(),
     getUserProfile(),
+    getUserCredits(),
+    getUserTransactions(),
   ]);
 
   const sets = setsResult.success ? setsResult.data : [];
   const user = userResult.success ? userResult.data : null;
+  const credits = creditsResult.success ? (creditsResult.data?.credits || 0) : 0;
+  const transactions = txResult.success ? txResult.data : [];
+  const assetsGenerated = transactions.filter(tx => tx.amount < 0).length;
+
   const displayName = user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || "Student";
 
   return (
@@ -31,8 +38,8 @@ export default async function DashboardPage() {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {[
             { label: "Sets Created", value: sets.length.toString(), icon: "folder_open" },
-            { label: "Avg. Score", value: "88%", icon: "star" },
-            { label: "This Week", value: "6.5h", icon: "schedule" },
+            { label: "Credits Balance", value: `${credits} cr`, icon: "payments" },
+            { label: "Total Generations", value: assetsGenerated.toString(), icon: "auto_awesome" },
           ].map((stat, i) => (
             <div key={i} className="flex flex-col p-4 rounded-2xl bg-muted/30 border border-muted-foreground/10">
               <div className="flex items-center gap-2 mb-1">

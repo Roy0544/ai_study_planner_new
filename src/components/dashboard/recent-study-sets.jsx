@@ -16,7 +16,7 @@ import { getCategoryIcon } from "@/lib/utils";
 
 export async function RecentStudySets() {
   const result = await fetchStudySets();
-  const recentSets = result.success ? result.data : [];
+  const recentSets = result.success ? result.data.slice(0, 3) : [];
 
   return (
     <section className="space-y-6">

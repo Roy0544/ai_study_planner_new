@@ -16,8 +16,12 @@ const extractText = (node) => {
 };
 
 export function MarkdownRenderer({ content, className, checkedSections, onToggleSection }) {
+  const formattedContent = typeof content === "string"
+    ? content.split('\\n').join('\n')
+    : content;
+
   return (
-    <div className={cn("prose prose-sm dark:prose-invert max-w-none", className)}>
+    <div className={cn("prose prose-sm dark:prose-invert max-w-none prose-ul:list-disc prose-ol:list-decimal prose-li:marker:text-primary/70 prose-li:text-muted-foreground", className)}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkMath]}
         rehypePlugins={[rehypeKatex]}
@@ -50,14 +54,12 @@ export function MarkdownRenderer({ content, className, checkedSections, onToggle
           },
           h3: ({ children }) => <h3 className="text-base font-bold mt-5 mb-2 text-foreground">{children}</h3>,
           blockquote: ({ children }) => <blockquote className="border-l-4 border-primary/50 bg-primary/5 px-4 py-3 rounded-r-xl my-4 text-sm text-muted-foreground not-italic">{children}</blockquote>,
-          ul: ({ children }) => <ul className="space-y-2 my-3 pl-4">{children}</ul>,
-          li: ({ children }) => <li className="text-sm text-muted-foreground flex gap-2 items-start"><span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-primary/50 shrink-0" /><span>{children}</span></li>,
           strong: ({ children }) => <strong className="font-bold text-foreground">{children}</strong>,
           p: ({ children }) => <p className="text-sm text-muted-foreground leading-relaxed mb-3">{children}</p>,
           code: ({ children }) => <code className="px-1.5 py-0.5 rounded bg-muted text-xs font-mono text-primary">{children}</code>,
         }}
       >
-        {content}
+        {formattedContent}
       </ReactMarkdown>
     </div>
   );

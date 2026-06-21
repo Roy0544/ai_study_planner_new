@@ -19,22 +19,24 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams,useRouter } from "next/navigation";
 import { useEffect, useState, useMemo } from "react";
 import { fetchStudySetById, generateFlashcards, generateQuiz, generateMindMap, generateQuickNote } from "@/actions/study-set";
 import { getCategoryIcon, cn } from "@/lib/utils";
 import { Loader2 } from "lucide-react";
 import { MarkdownRenderer } from "@/components/ui/markdown-renderer";
-
 import { Suspense } from "react";
+import { InsufficientCreditsModal } from "@/components/dashboard/insufficient-credits-modal";
 
 export function WorkspaceContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();     
   const setId = searchParams.get("id");
   
   const [studySet, setStudySet] = useState(null);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(null); // 'notes', 'flashcards', etc.
+  const [creditsModal, setCreditsModal] = useState({ isOpen: false, required: 2, action: "" });
 
   // Mastery Tracking State
   const [checkedSections, setCheckedSections] = useState([]);
@@ -54,18 +56,25 @@ export function WorkspaceContent() {
   const [learningNotes, setLearningNotes] = useState({});
   const [currentQuizResultPage, setCurrentQuizResultPage] = useState(0);
 
-  const totalNotesSections = useMemo(() => {
-    if (!studySet?.summary) return 0;
-    const matches = studySet.summary.match(/^##\s+(.+)$/gm);
-    return matches ? matches.length : 0;
+  const sanitizedSummary = useMemo(() => {
+    if (!studySet?.summary) return "";
+    return typeof studySet.summary === "string"
+      ? studySet.summary.split('\\n').join('\n')
+      : studySet.summary;
   }, [studySet?.summary]);
 
+  const totalNotesSections = useMemo(() => {
+    if (!sanitizedSummary) return 0;
+    const matches = sanitizedSummary.match(/^##\s+(.+)$/gm);
+    return matches ? matches.length : 0;
+  }, [sanitizedSummary]);
+
   const noteChapters = useMemo(() => {
-    if (!studySet?.summary) return [];
+    if (!sanitizedSummary) return [];
     // Split by "## " but keep the delimiter
-    const parts = studySet.summary.split(/(?=^##\s+)/m);
+    const parts = sanitizedSummary.split(/(?=^##\s+)/m);
     return parts.filter(p => p.trim() !== "");
-  }, [studySet?.summary]);
+  }, [sanitizedSummary]);
 
   useEffect(() => {
     if (setId) {
@@ -184,8 +193,23 @@ export function WorkspaceContent() {
       
       if (result?.success) {
         setStudySet(prev => ({ ...prev, [type]: result.data }));
+        window.dispatchEvent(new Event("credits-updated"));
+      } else {
+        if (result?.insufficientCredits) {
+          setCreditsModal({
+            isOpen: true,
+            required: type === 'quiz' ? 3 : 2,
+            action: type === 'flashcards' ? "Generate Flashcards" : type === 'quiz' ? "Generate Quiz" : "Generate Mind Map"
+          });
+        } else {
+          alert(result?.error || "An error occurred during generation.");
+        }
       }
-    } finally {
+    }catch (err) {
+          console.error("Failed to generate:", err);
+          alert("Failed to connect to the server.");
+    }
+     finally {
       setGenerating(null);
     }
   };
@@ -205,7 +229,7 @@ export function WorkspaceContent() {
           <div className="h-full flex flex-col">
             <ScrollArea className="flex-1 p-8">
               <MarkdownRenderer 
-                content={noteChapters[currentNotePage] || studySet.summary} 
+                content={noteChapters[currentNotePage] || sanitizedSummary} 
                 className="max-w-3xl mx-auto pb-12"
                 checkedSections={checkedSections}
                 onToggleSection={(sectionTitle) => {
@@ -290,7 +314,7 @@ export function WorkspaceContent() {
                     className="bg-purple-500 hover:bg-purple-600 text-white rounded-xl font-bold px-10 h-12 shrink-0 min-w-[220px] shadow-lg shadow-purple-500/20 text-base"
                   >
                     {generating === 'flashcards' && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
-                    Generate Cards
+                    Generate Cards (2 Credits)
                   </Button>
                 </div>
               </div>
@@ -400,7 +424,7 @@ export function WorkspaceContent() {
                    className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-bold px-10 h-12 shrink-0 min-w-[220px] shadow-lg shadow-emerald-500/20 text-base"
                  >
                    {generating === 'mindmaps' && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
-                   Generate Mind Map
+                   Generate Mind Map (2 Credits)
                  </Button>
                </div>
              ) : (
@@ -414,7 +438,7 @@ export function WorkspaceContent() {
                      className="rounded-lg shadow-sm border-emerald-500/20 text-emerald-500 hover:bg-emerald-500/10 hover:text-emerald-600"
                    >
                      {generating === 'mindmaps' ? <Loader2 className="h-4 w-4 animate-spin" /> : <span className="material-symbols-outlined text-[16px] mr-1.5">refresh</span>}
-                     Regenerate
+                     Regenerate (2 Credits)
                    </Button>
                  </div>
                  <MermaidDiagram chart={studySet.mindmaps} />
@@ -447,7 +471,7 @@ export function WorkspaceContent() {
                   className="bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-bold px-8 h-11 shrink-0 min-w-[180px]"
                 >
                   {generating === 'quiz' && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Generate Quiz
+                  Generate Quiz (3 Credits)
                 </Button>
               </div>
             ) : (
@@ -856,6 +880,12 @@ export function WorkspaceContent() {
 
         </div>
       </div>
+      <InsufficientCreditsModal
+        isOpen={creditsModal.isOpen}
+        onClose={() => setCreditsModal(prev => ({ ...prev, isOpen: false }))}
+        requiredCredits={creditsModal.required}
+        actionName={creditsModal.action}
+      />
     </main>
   );
 }
