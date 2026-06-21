@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { getUserCredits } from "@/actions/billing";
 import { BuyCreditsButton } from "@/components/dashboard/buy-credits-button";
+import Link from "next/link";
 
 export function CreditsWidget() {
   const [credits, setCredits] = useState(null);
@@ -19,6 +20,17 @@ export function CreditsWidget() {
 
   useEffect(() => {
     fetchCredits();
+    
+    const handleSync = (e) => {
+      if (e.detail !== undefined) {
+        setCredits(e.detail);
+      } else {
+        fetchCredits();
+      }
+    };
+
+    window.addEventListener("credits-updated", handleSync);
+    return () => window.removeEventListener("credits-updated", handleSync);
   }, [fetchCredits]);
 
   const handlePurchaseSuccess = (newCredits) => {
@@ -28,9 +40,15 @@ export function CreditsWidget() {
   return (
     <div className="p-4 rounded-xl bg-muted/30 border border-muted-foreground/10 space-y-3">
       <div className="flex items-center justify-between">
-        <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+        <Link
+          href="/dashboard/billing"
+          className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-primary transition-colors flex items-center gap-1 group"
+        >
           Credits Balance
-        </span>
+          <span className="material-symbols-outlined text-[11px] opacity-0 group-hover:opacity-100 transition-opacity">
+            open_in_new
+          </span>
+        </Link>
         <div className="flex items-center gap-1">
           <span className="material-symbols-outlined text-primary text-[14px]">toll</span>
           <span className="text-[10px] font-bold text-foreground">

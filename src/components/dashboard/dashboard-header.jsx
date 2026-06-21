@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { handleLogout } from "@/config/client";
+import Link from "next/link";
 
 export function DashboardHeader() {
   return (
@@ -33,7 +34,9 @@ export function DashboardHeader() {
           <DropdownMenuLabel>Alex Johnson</DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuItem>Profile</DropdownMenuItem>
-          <DropdownMenuItem>Billing</DropdownMenuItem>
+          <DropdownMenuItem asChild>
+            <Link href="/dashboard/billing">Billing</Link>
+          </DropdownMenuItem>
           <DropdownMenuItem>Team</DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive">
