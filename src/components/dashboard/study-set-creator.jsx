@@ -15,12 +15,13 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { uploadHandler } from "@/config/client";
 import { InsufficientCreditsModal } from "@/components/dashboard/insufficient-credits-modal";
+import { CREDIT_COSTS } from "@/lib/credits";
 
 
 export function StudySetCreator() {
   const [status, setStatus] = useState(null); // null, 'uploading', 'generating'
   const [result, setResult] = useState(null);
-  const [creditsModal, setCreditsModal] = useState({ isOpen: false, required: 5, action: "" });
+  const [creditsModal, setCreditsModal] = useState({ isOpen: false, required: CREDIT_COSTS.study_set, action: "" });
   const router = useRouter();
 
   const handleGenerate = async (data) => {
@@ -53,7 +54,7 @@ export function StudySetCreator() {
         if (response.insufficientCredits) {
           setCreditsModal({
             isOpen: true,
-            required: 5,
+            required: CREDIT_COSTS.study_set,
             action: "Create Study Set"
           });
         } else {
@@ -90,7 +91,7 @@ export function StudySetCreator() {
         </div>
         <p className="text-[10px] text-muted-foreground/60 text-right px-1 flex items-center justify-end gap-1 select-none">
           <span className="material-symbols-outlined text-[12px] text-primary">toll</span>
-          Generating a full suite costs 5 credits
+          Generating a full suite costs {CREDIT_COSTS.study_set} credits
         </p>
 
         {status === 'uploading' && (

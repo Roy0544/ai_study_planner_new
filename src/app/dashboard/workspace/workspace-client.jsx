@@ -752,16 +752,6 @@ export function WorkspaceContent() {
             <h1 className="text-2xl font-bold tracking-tight">{studySet.title}</h1>
             <p className="text-sm text-muted-foreground max-w-2xl line-clamp-1">{studySet.description}</p>
           </div>
-          <div className="flex items-center gap-3 shrink-0">
-            <Button variant="outline" className="rounded-xl border-muted-foreground/20 h-10 shrink-0">
-              <span className="material-symbols-outlined mr-2 text-sm">share</span>
-              Share
-            </Button>
-            <Button className="rounded-xl bg-secondary text-secondary-foreground hover:bg-white hover:text-secondary transition-all shadow-lg shadow-secondary/20 font-bold h-10 shrink-0">
-              <span className="material-symbols-outlined mr-2 text-sm">auto_awesome</span>
-              AI Chat
-            </Button>
-          </div>
         </div>
 
         {/* Main Workspace Layout */}

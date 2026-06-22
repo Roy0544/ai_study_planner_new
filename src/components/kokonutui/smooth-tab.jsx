@@ -188,11 +188,11 @@ export default function SmoothTab({
   return (
     <div className={cn("flex h-full flex-col w-full", className)}>
       {/* Top Toolbar */}
-      <div className="flex justify-center shrink-0 pb-6">
+      <div className="flex justify-start sm:justify-center shrink-0 pb-6 w-full overflow-x-auto scrollbar-none">
         <div
           aria-label="Smooth tabs"
           className={cn(
-            "relative flex items-center justify-between gap-1 p-1.5",
+            "relative flex items-center justify-between gap-1 p-1.5 min-w-max",
             "bg-background/80 backdrop-blur-md",
             "rounded-2xl border border-muted-foreground/10",
             "shadow-xl"
