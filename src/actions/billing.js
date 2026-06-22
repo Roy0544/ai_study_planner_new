@@ -32,12 +32,13 @@ function getSupabaseAdminClient() {
   );
 }
 
-// ─── Razorpay instance ──────────────────────────────────────────────────────
-
-const razorpay = new Razorpay({
-  key_id: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-  key_secret: process.env.RAZORPAY_KEY_SECRET,
-});
+// ─── Razorpay helper ────────────────────────────────────────────────────────
+function getRazorpay() {
+  return new Razorpay({
+    key_id: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "mock_key",
+    key_secret: process.env.RAZORPAY_KEY_SECRET || "mock_secret",
+  });
+}
 
 
 
@@ -74,6 +75,7 @@ export async function createCreditsOrder(packageId) {
     const pkg = CREDIT_PACKAGES.find((p) => p.id === packageId);
     if (!pkg) throw new Error("Invalid credit package selected");
 
+    const razorpay = getRazorpay();
     // Razorpay amount is in paise (₹1 = 100 paise)
     const order = await razorpay.orders.create({
       amount: pkg.priceINR * 100,
