@@ -34,9 +34,11 @@ function getSupabaseAdminClient() {
 
 // ─── Razorpay helper ────────────────────────────────────────────────────────
 function getRazorpay() {
+  const keyId = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID?.trim();
+  const keySecret = process.env.RAZORPAY_KEY_SECRET?.trim();
   return new Razorpay({
-    key_id: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "mock_key",
-    key_secret: process.env.RAZORPAY_KEY_SECRET || "mock_secret",
+    key_id: keyId || "mock_key",
+    key_secret: keySecret || "mock_secret",
   });
 }
 
@@ -90,8 +92,12 @@ export async function createCreditsOrder(packageId) {
 
     return { success: true, order, package: pkg };
   } catch (error) {
-    console.error("Order creation failed:", error.message);
-    return { success: false, error: error.message };
+    const errorMessage = error.message || 
+                         (error.error && error.error.description) || 
+                         error.description || 
+                         "Unknown Razorpay error";
+    console.error("Order creation failed:", errorMessage, error);
+    return { success: false, error: errorMessage };
   }
 }
 

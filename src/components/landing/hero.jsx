@@ -23,7 +23,7 @@ export function Hero() {
       </p>
       <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
         <RainbowButton asChild className="px-8 font-semibold">
-          <Link href="/dashboard">Get Started for Free</Link>
+          <Link href="/login">Get Started for Free</Link>
         </RainbowButton>
         <Button size="lg" variant="outline" className="px-8 text-md font-semibold gap-2">
           <span className="material-symbols-outlined text-lg">play_circle</span> Watch Demo

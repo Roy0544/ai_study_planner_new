@@ -65,6 +65,7 @@ export function StudySetCreator() {
       console.log("Study set created successfully:", response.data.title);
       setResult(response.data);
       window.dispatchEvent(new Event("credits-updated"));
+      router.push(`/dashboard/workspace?id=${response.data.id}`);
     } catch (err) {
       console.error("Submission failed:", err);
       alert(`Error: ${err.message || "An unexpected error occurred. Please try again."}`);
@@ -120,7 +121,7 @@ export function StudySetCreator() {
             <Button 
               size="sm" 
               className="w-full bg-emerald-500 text-white hover:bg-emerald-600 border-none shadow-lg shadow-emerald-500/20"
-              onClick={() => router.push(`/dashboard/workspace/${result.id}`)}
+              onClick={() => router.push(`/dashboard/workspace?id=${result.id}`)}
             >
               Open Workspace
             </Button>

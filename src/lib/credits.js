@@ -8,7 +8,7 @@ export const CREDIT_PACKAGES = [
 
 export const CREDIT_COSTS = {
   study_set:  150,
-  mindmap:    2,
-  flashcards: 2,
-  quiz:       3,
+  mindmap:    5,
+  flashcards: 6,
+  quiz:       8,
 };

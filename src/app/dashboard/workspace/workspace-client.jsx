@@ -27,6 +27,7 @@ import { Loader2 } from "lucide-react";
 import { MarkdownRenderer } from "@/components/ui/markdown-renderer";
 import { Suspense } from "react";
 import { InsufficientCreditsModal } from "@/components/dashboard/insufficient-credits-modal";
+import { CREDIT_COSTS } from "@/lib/credits";
 
 export function WorkspaceContent() {
   const searchParams = useSearchParams();
@@ -36,7 +37,7 @@ export function WorkspaceContent() {
   const [studySet, setStudySet] = useState(null);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(null); // 'notes', 'flashcards', etc.
-  const [creditsModal, setCreditsModal] = useState({ isOpen: false, required: 2, action: "" });
+  const [creditsModal, setCreditsModal] = useState({ isOpen: false, required: CREDIT_COSTS.flashcards, action: "" });
 
   // Mastery Tracking State
   const [checkedSections, setCheckedSections] = useState([]);
@@ -196,9 +197,10 @@ export function WorkspaceContent() {
         window.dispatchEvent(new Event("credits-updated"));
       } else {
         if (result?.insufficientCredits) {
+          const reqVal = type === 'mindmaps' ? CREDIT_COSTS.mindmap : CREDIT_COSTS[type];
           setCreditsModal({
             isOpen: true,
-            required: type === 'quiz' ? 3 : 2,
+            required: reqVal,
             action: type === 'flashcards' ? "Generate Flashcards" : type === 'quiz' ? "Generate Quiz" : "Generate Mind Map"
           });
         } else {
@@ -314,12 +316,24 @@ export function WorkspaceContent() {
                     className="bg-purple-500 hover:bg-purple-600 text-white rounded-xl font-bold px-10 h-12 shrink-0 min-w-[220px] shadow-lg shadow-purple-500/20 text-base"
                   >
                     {generating === 'flashcards' && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
-                    Generate Cards (2 Credits)
+                    Generate Cards ({CREDIT_COSTS.flashcards} Credits)
                   </Button>
                 </div>
               </div>
             ) : (
               <>
+                <div className="px-8 pt-4 flex justify-end items-center shrink-0">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => handleGenerate('flashcards')} 
+                    disabled={!!generating}
+                    className="rounded-lg shadow-sm border-purple-500/20 text-purple-500 hover:bg-purple-500/10 hover:text-purple-600"
+                  >
+                    {generating === 'flashcards' ? <Loader2 className="h-4 w-4 animate-spin" /> : <span className="material-symbols-outlined text-[16px] mr-1.5">refresh</span>}
+                    Regenerate ({CREDIT_COSTS.flashcards} Credits)
+                  </Button>
+                </div>
                 <ScrollArea className="flex-1 p-8">
                   <div className="max-w-5xl mx-auto pb-12">
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 justify-items-center">
@@ -424,7 +438,7 @@ export function WorkspaceContent() {
                    className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-bold px-10 h-12 shrink-0 min-w-[220px] shadow-lg shadow-emerald-500/20 text-base"
                  >
                    {generating === 'mindmaps' && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
-                   Generate Mind Map (2 Credits)
+                   Generate Mind Map ({CREDIT_COSTS.mindmap} Credits)
                  </Button>
                </div>
              ) : (
@@ -438,7 +452,7 @@ export function WorkspaceContent() {
                      className="rounded-lg shadow-sm border-emerald-500/20 text-emerald-500 hover:bg-emerald-500/10 hover:text-emerald-600"
                    >
                      {generating === 'mindmaps' ? <Loader2 className="h-4 w-4 animate-spin" /> : <span className="material-symbols-outlined text-[16px] mr-1.5">refresh</span>}
-                     Regenerate (2 Credits)
+                     Regenerate ({CREDIT_COSTS.mindmap} Credits)
                    </Button>
                  </div>
                  <MermaidDiagram chart={studySet.mindmaps} />
@@ -471,12 +485,34 @@ export function WorkspaceContent() {
                   className="bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-bold px-8 h-11 shrink-0 min-w-[180px]"
                 >
                   {generating === 'quiz' && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Generate Quiz (3 Credits)
+                  Generate Quiz ({CREDIT_COSTS.quiz} Credits)
                 </Button>
               </div>
             ) : (
-              <ScrollArea className="h-full w-full">
-                <div className="p-8">
+              <>
+                <div className="flex justify-between items-center shrink-0 pb-4 border-b border-border/50 mb-4">
+                  <span className="text-xs text-muted-foreground font-semibold text-amber-500">
+                    Practice Quiz Assessment
+                  </span>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => {
+                      setCurrentQuizIndex(0);
+                      setQuizAnswers({});
+                      setShowQuizResult(false);
+                      setCurrentQuizResultPage(0);
+                      handleGenerate('quiz');
+                    }} 
+                    disabled={!!generating}
+                    className="rounded-lg shadow-sm border-amber-500/20 text-amber-500 hover:bg-amber-500/10 hover:text-amber-600"
+                  >
+                    {generating === 'quiz' ? <Loader2 className="h-4 w-4 animate-spin" /> : <span className="material-symbols-outlined text-[16px] mr-1.5">refresh</span>}
+                    Regenerate ({CREDIT_COSTS.quiz} Credits)
+                  </Button>
+                </div>
+                <ScrollArea className="flex-1 w-full">
+                  <div className="p-8 pt-2">
                   {showQuizResult ? (
                     <div className="max-w-2xl mx-auto flex flex-col items-center justify-center space-y-6 text-center pb-12">
                       <h2 className="text-3xl font-bold">Quiz Completed!</h2>
@@ -708,6 +744,7 @@ export function WorkspaceContent() {
                   )}
                 </div>
               </ScrollArea>
+              </>
             )}
           </div>
         )

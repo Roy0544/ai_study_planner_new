@@ -16,7 +16,7 @@ export function CTA() {
             Join thousands of students and researchers who are learning 3x faster with StudyAI.
           </p>
           <RainbowButton asChild className="px-10 font-bold h-14 text-lg">
-            <Link href="/dashboard">Create Free Account</Link>
+            <Link href="/login">Create Free Account</Link>
           </RainbowButton>
         </div>
       </Card>

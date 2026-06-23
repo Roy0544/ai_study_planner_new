@@ -14,7 +14,7 @@ export function Navbar() {
   return (
     <header className="fixed top-0 w-full z-50 border-b bg-background/80 backdrop-blur-xl">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-        <div className="text-2xl font-bold text-primary tracking-tight">StudyAI</div>
+        <div className="text-2xl font-bold text-primary tracking-tight">Gkvk_AI</div>
         
         <NavigationMenu className="hidden md:flex">
           <NavigationMenuList>

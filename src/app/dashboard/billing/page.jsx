@@ -378,7 +378,7 @@ export default function BillingPage() {
                     </li>
                     <li className="flex items-center gap-1.5">
                       <span className="material-symbols-outlined text-[14px] text-emerald-500 font-bold">check</span>
-                      Generate up to {Math.floor(pkg.credits / 5)} study sets
+                      Generate up to {Math.floor(pkg.credits / CREDIT_COSTS.study_set)} study sets
                     </li>
                     {pkg.id === "pro" && (
                       <li className="flex items-center gap-1.5 font-semibold text-secondary">
