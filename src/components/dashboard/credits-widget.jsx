@@ -6,9 +6,13 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
+import { useRouter } from "next/navigation";
+import client from "@/config/client";
+
 export function CreditsWidget() {
   const [credits, setCredits] = useState(null);
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
   const fetchCredits = useCallback(async () => {
     setLoading(true);
@@ -22,6 +26,14 @@ export function CreditsWidget() {
   useEffect(() => {
     fetchCredits();
     
+    // Listen to Supabase auth state changes (e.g. when OAuth session is established)
+    const { data: { subscription } } = client.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
+        fetchCredits();
+        router.refresh();
+      }
+    });
+
     const handleSync = (e) => {
       if (e.detail !== undefined) {
         setCredits(e.detail);
@@ -31,8 +43,11 @@ export function CreditsWidget() {
     };
 
     window.addEventListener("credits-updated", handleSync);
-    return () => window.removeEventListener("credits-updated", handleSync);
-  }, [fetchCredits]);
+    return () => {
+      subscription.unsubscribe();
+      window.removeEventListener("credits-updated", handleSync);
+    };
+  }, [fetchCredits, router]);
 
   const handlePurchaseSuccess = (newCredits) => {
     setCredits(newCredits);

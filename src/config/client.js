@@ -69,7 +69,7 @@ export const handleLogout = async () => {
         console.error('Error during logout:', error.message);
     }
 }
-export const uploadHandler = async (file) => {
+export const uploadHandler = async (file, bucketName = 'study-materials') => {
     try {
         const { data: { user }, error: authError } = await client.auth.getUser();
         if (authError || !user) throw new Error("Authentication required");
@@ -79,13 +79,13 @@ export const uploadHandler = async (file) => {
         const filePath = `${user.id}/${fileName}`;
 
         const { data, error: uploadError } = await client.storage
-            .from('study-materials')
+            .from(bucketName)
             .upload(filePath, file);
             
         if (uploadError) throw uploadError;
         
         const { data: { publicUrl } } = client.storage
-          .from('study-materials')
+          .from(bucketName)
           .getPublicUrl(filePath);
     
         return { success: true, url: publicUrl, path: filePath };
