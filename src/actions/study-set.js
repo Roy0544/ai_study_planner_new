@@ -3,7 +3,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai"
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { parseOffice } from "officeparser";
-import { deductCredits } from "./billing";
+import { deductCredits, refundCredits } from "./billing";
 
 async function getSupabaseServerClient() {
   const cookieStore = await cookies();
@@ -162,7 +162,7 @@ export async function generateStudySets(content, fileUrl) {
 
   try {
     const model = genAI.getGenerativeModel({ 
-      model: "gemini-3.5-flash",
+      model: "gemini-1.5-flash",
       systemInstruction: SYSTEM_PROMPT,
       generationConfig: { 
         responseMimeType: "application/json",
@@ -275,6 +275,8 @@ export async function createFullStudySet(formData) {
     if (!aiResult.success) {
       // Cleanup: Optionally delete the material if AI fails
       await supabase.from('materials').delete().eq('id', material.id);
+      // Refund credits
+      await refundCredits("study_set");
       return aiResult;
     }
 
@@ -294,13 +296,19 @@ export async function createFullStudySet(formData) {
       .select()
       .single();
 
-    if (studySetError) throw studySetError;
+    if (studySetError) {
+      // Refund credits
+      await refundCredits("study_set");
+      throw studySetError;
+    }
 
     console.log("Successfully created study set and linked to material.");
     return { success: true, id: studySet.id, data: studySet };
 
     } catch (error) {
     console.error("Creation failed:", error.message);
+    // Refund credits
+    await refundCredits("study_set");
     return { success: false, error: error.message };
     }
 }
@@ -420,7 +428,7 @@ export async function generateMindMap(setId, content, fileUrl) {
 
   try {
     const model = genAI.getGenerativeModel({ 
-      model: "gemini-2.5-flash-lite",
+      model: "gemini-1.5-flash",
       generationConfig: {
         responseMimeType: "application/json",
         responseSchema: {
@@ -485,6 +493,7 @@ export async function generateMindMap(setId, content, fileUrl) {
       mermaidCode = data.mermaid;
     } catch (err) {
       console.error("JSON parse failed for mindmap:", err);
+      await refundCredits("mindmap");
       return { success: false, error: "Failed to parse mindmap response" };
     }
 
@@ -502,10 +511,14 @@ export async function generateMindMap(setId, content, fileUrl) {
       dbResult = await supabase.from('flowcharts').insert({ study_set_id: setId, mermaid_code: mermaidCode });
     }
 
-    if (dbResult.error) throw dbResult.error;
+    if (dbResult.error) {
+      await refundCredits("mindmap");
+      throw dbResult.error;
+    }
     return { success: true, data: mermaidCode };
   } catch (error) {
     console.error("Mindmap generation failed:", error);
+    await refundCredits("mindmap");
     return { success: false, error: error.message };
   }
 }
@@ -528,7 +541,7 @@ export async function generateFlashcards(setId, content, fileUrl) {
 
   try {
     const model = genAI.getGenerativeModel({ 
-      model: "gemini-2.5-flash-lite",
+      model: "gemini-1.5-flash",
       generationConfig: { 
         responseMimeType: "application/json",
         responseSchema: {
@@ -585,6 +598,7 @@ export async function generateFlashcards(setId, content, fileUrl) {
       flashcards = data.flashcards;
     } catch (err) {
       console.error("JSON parse failed for flashcards:", err);
+      await refundCredits("flashcards");
       return { success: false, error: "Failed to parse flashcards response" };
     }
 
@@ -600,6 +614,7 @@ export async function generateFlashcards(setId, content, fileUrl) {
     return { success: true, data: flashcards };
   } catch (error) {
     console.error("Flashcard generation failed:", error);
+    await refundCredits("flashcards");
     return { success: false, error: error.message };
   }
 }
@@ -622,7 +637,7 @@ export async function generateQuiz(setId, content, fileUrl) {
 
   try {
     const model = genAI.getGenerativeModel({ 
-      model: "gemini-2.5-flash-lite",
+      model: "gemini-1.5-flash",
       generationConfig: { 
         responseMimeType: "application/json",
         responseSchema: {
@@ -681,6 +696,7 @@ export async function generateQuiz(setId, content, fileUrl) {
       quiz = data.quiz;
     } catch (err) {
       console.error("JSON parse failed for quiz:", err);
+      await refundCredits("quiz");
       return { success: false, error: "Failed to parse quiz response" };
     }
 
@@ -696,6 +712,7 @@ export async function generateQuiz(setId, content, fileUrl) {
     return { success: true, data: quiz };
   } catch (error) {
     console.error("Quiz generation failed:", error);
+    await refundCredits("quiz");
     return { success: false, error: error.message };
   }
 }
@@ -721,7 +738,7 @@ export async function generateQuickNote(question, correctAnswer, content) {
 
   const genAI = new GoogleGenerativeAI(apiKey);
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
     const prompt = `Provide a short study note for: Question: "${question}", Correct Answer: "${correctAnswer}". Material: ${content}`;
     const result = await model.generateContent(prompt);
     return { success: true, data: result.response.text() };

@@ -40,23 +40,23 @@ export function DashboardHeader() {
     .toUpperCase() || "ST";
 
   return (
-    <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b border-border/40 bg-background/80 backdrop-blur-md px-6">
+    <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b border-app-border bg-app-bg/80 backdrop-blur-md px-6">
       <SidebarTrigger />
       <div className="flex-1">
-        <h2 className="text-sm font-medium text-muted-foreground">Workspace / Dashboard</h2>
+        <h2 className="text-sm font-medium text-text-secondary">Workspace / Dashboard</h2>
       </div>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon" className="rounded-full cursor-pointer hover:bg-muted/10">
-            <Avatar className="h-8 w-8 border border-border/40">
+          <Button variant="ghost" size="icon" className="rounded-full cursor-pointer hover:bg-white/5">
+            <Avatar className="h-8 w-8 border border-app-border">
               {avatarUrl && <AvatarImage src={avatarUrl} alt={displayName} />}
-              <AvatarFallback className="bg-secondary/15 text-secondary font-bold text-xs">
+              <AvatarFallback className="bg-app-brand/10 text-app-brand font-bold text-xs">
                 {initials}
               </AvatarFallback>
             </Avatar>
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-56 bg-surface-container-high border border-muted-foreground/15 text-foreground rounded-xl shadow-xl">
+        <DropdownMenuContent align="end" className="w-56 bg-app-card border border-app-border text-text-primary rounded-xl shadow-md">
           <DropdownMenuLabel className="font-semibold text-xs py-2 px-3 text-muted-foreground">
             Signed in as 
             <span className="font-bold text-foreground block mt-0.5 truncate">{displayName}</span>

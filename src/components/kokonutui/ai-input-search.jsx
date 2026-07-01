@@ -1,16 +1,6 @@
-"use client";;
-/**
- * @author: @kokonutui
- * @description: AI Input Search
- * @version: 1.0.0
- * @date: 2025-06-26
- * @license: MIT
- * @website: https://kokonutui.com
- * @github: https://github.com/kokonut-labs/kokonutui
- */
+"use client";
 
-import { Globe, Paperclip, Send, Loader2 } from "lucide-react";
-import { AnimatePresence, motion } from "motion/react";
+import { Paperclip, Send, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { useAutoResizeTextarea } from "@/hooks/use-auto-resize-textarea";
@@ -19,6 +9,7 @@ import { cn } from "@/lib/utils";
 export default function AI_Input_Search({
   placeholder = "Search the web...",
   searchLabel = "Search",
+  costText,
   onSubmit,
   className
 }) {
@@ -29,7 +20,6 @@ export default function AI_Input_Search({
     minHeight: 52,
     maxHeight: 200,
   });
-  const [showSearch, setShowSearch] = useState(true);
   const [isFocused, setIsFocused] = useState(false);
 
   const handleSubmit = async () => {
@@ -74,14 +64,14 @@ export default function AI_Input_Search({
   };
 
   return (
-    <div className={cn("w-full py-4", className)}>
+    <div className={cn("w-full py-2", className)}>
       <div className="relative mx-auto w-full">
         <div
           aria-label="Search input container"
           className={cn(
             "relative flex w-full cursor-text flex-col rounded-xl text-left transition-all duration-200",
-            "ring-1 ring-black/10 dark:ring-white/10",
-            isFocused && "ring-black/20 dark:ring-white/20"
+            "bg-app-inset border border-app-border focus-within:border-app-brand/75 focus-within:ring-1 focus-within:ring-app-brand/20",
+            isFocused && "border-app-brand/75"
           )}
           onClick={handleContainerClick}
           onKeyDown={(e) => {
@@ -93,7 +83,7 @@ export default function AI_Input_Search({
           tabIndex={0}>
           <div className="max-h-[200px] overflow-y-auto">
             <Textarea
-              className="w-full resize-none rounded-xl rounded-b-none border-none bg-black/5 px-4 py-3 leading-[1.2] placeholder:text-black/70 focus-visible:ring-0 dark:bg-white/5 dark:text-white dark:placeholder:text-white/70"
+              className="w-full resize-none rounded-xl rounded-b-none border-none bg-transparent px-4 py-3 leading-[1.3] placeholder:text-text-muted focus-visible:ring-0 text-text-primary text-sm focus:outline-none"
               id="ai-input-04"
               onBlur={handleBlur}
               onChange={(e) => {
@@ -112,11 +102,14 @@ export default function AI_Input_Search({
               value={value} />
           </div>
 
-          <div className="h-12 rounded-b-xl bg-black/5 dark:bg-white/5">
-            <div className="absolute bottom-3 left-3 flex items-center gap-2">
+          <div className="flex items-center justify-between px-3 py-2 border-t border-app-border rounded-b-xl bg-app-card/40 select-none">
+            {/* Left: Attachment trigger */}
+            <div className="flex items-center gap-2">
               <label className={cn(
-                "cursor-pointer rounded-lg p-2 transition-all",
-                file ? "bg-violet-500/15 text-violet-500" : "bg-black/5 dark:bg-white/5 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white"
+                "cursor-pointer rounded-lg p-2 transition-all flex items-center justify-center border",
+                file 
+                  ? "bg-app-brand/10 text-app-brand border-app-brand/20" 
+                  : "bg-app-inset text-text-secondary border-app-border hover:bg-app-card hover:text-text-primary"
               )}>
                 <input 
                   className="hidden" 
@@ -127,69 +120,26 @@ export default function AI_Input_Search({
                 <Paperclip className="h-4 w-4" />
               </label>
               {file && (
-                <span className="text-[10px] font-medium text-violet-500 max-w-[100px] truncate">
+                <span className="text-[10px] font-semibold text-app-brand max-w-[150px] truncate">
                   {file.name}
+                </span>
+              )}
+            </div>
+
+            {/* Right: Solid Vibrant Submit Action with adjacent Cost Indicator */}
+            <div className="flex items-center gap-3">
+              {costText && (
+                <span className="text-[10px] text-text-muted flex items-center gap-1">
+                  <span className="material-symbols-outlined text-[12px] text-app-brand">toll</span>
+                  {costText}
                 </span>
               )}
               <button
                 className={cn(
-                  "flex h-8 cursor-pointer items-center gap-2 rounded-full border px-1.5 py-1 transition-all",
-                  showSearch
-                    ? "border-violet-400 bg-violet-500/15 text-violet-500"
-                    : "border-transparent bg-black/5 text-black/40 hover:text-black dark:bg-white/5 dark:text-white/40 dark:hover:text-white"
-                )}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowSearch(!showSearch);
-                }}
-                type="button">
-                <div className="flex h-4 w-4 shrink-0 items-center justify-center">
-                  <motion.div
-                    animate={{
-                      rotate: showSearch ? 180 : 0,
-                      scale: showSearch ? 1.1 : 1,
-                    }}
-                    transition={{
-                      type: "spring",
-                      stiffness: 260,
-                      damping: 25,
-                    }}
-                    whileHover={{
-                      rotate: showSearch ? 180 : 15,
-                      scale: 1.1,
-                      transition: {
-                        type: "spring",
-                        stiffness: 300,
-                        damping: 10,
-                      },
-                    }}>
-                    <Globe className={cn("h-4 w-4", showSearch ? "text-violet-500" : "text-inherit")} />
-                  </motion.div>
-                </div>
-                <AnimatePresence>
-                  {showSearch && (
-                    <motion.span
-                      animate={{
-                        width: "auto",
-                        opacity: 1,
-                      }}
-                      className="shrink-0 overflow-hidden whitespace-nowrap text-violet-500 text-sm"
-                      exit={{ width: 0, opacity: 0 }}
-                      initial={{ width: 0, opacity: 0 }}
-                      transition={{ duration: 0.2 }}>
-                      {searchLabel}
-                    </motion.span>
-                  )}
-                </AnimatePresence>
-              </button>
-            </div>
-            <div className="absolute right-3 bottom-3">
-              <button
-                className={cn(
-                  "rounded-lg p-2 transition-all duration-200",
+                  "flex h-9 items-center gap-1.5 rounded-lg px-4 text-xs font-bold transition-all duration-200 border-none",
                   (value || file) && !isUploading
-                    ? "bg-violet-500/15 text-violet-500 cursor-pointer hover:bg-violet-500/25"
-                    : "bg-black/5 text-black/40 dark:bg-white/5 dark:text-white/40 cursor-not-allowed"
+                    ? "bg-app-brand text-white hover:bg-app-brand-hover cursor-pointer"
+                    : "bg-app-inset text-text-muted cursor-not-allowed border border-app-border"
                 )}
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={(e) => {
@@ -199,9 +149,15 @@ export default function AI_Input_Search({
                 disabled={(!value && !file) || isUploading}
                 type="button">
                 {isUploading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <>
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    <span>Analyzing...</span>
+                  </>
                 ) : (
-                  <Send className="h-4 w-4" />
+                  <>
+                    <Send className="h-3.5 w-3.5" />
+                    <span>{searchLabel}</span>
+                  </>
                 )}
               </button>
             </div>

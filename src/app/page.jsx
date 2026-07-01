@@ -8,6 +8,11 @@ import { CTA } from "@/components/landing/cta";
 import { Footer } from "@/components/landing/footer";
 import { ParticlesBackground } from "@/components/landing/particles-background";
 
+export const metadata = {
+  title: "GKVK AI Study Planner & Hub — Home",
+  description: "Transform scattered PDFs, notes, and academic records into structured interactive study sets, quizzes, mindmaps, and crowdsourced exam sheets.",
+};
+
 export default function LandingPage() {
   return (
     <div className="flex flex-col min-h-screen relative overflow-hidden">

@@ -56,11 +56,11 @@ export function CreditsWidget() {
   const isLow = credits !== null && credits < 5;
 
   return (
-    <div className="p-4 rounded-xl bg-muted/30 border border-muted-foreground/10 space-y-3">
+    <div className="p-4 rounded-xl bg-app-card border border-app-border space-y-3">
       <div className="flex items-center justify-between">
         <Link
           href="/dashboard/billing"
-          className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hover:text-primary transition-colors flex items-center gap-1 group"
+          className="text-[10px] font-bold text-text-muted uppercase tracking-widest hover:text-text-primary transition-colors flex items-center gap-1 group"
         >
           Credits Balance
           <span className="material-symbols-outlined text-[11px] opacity-0 group-hover:opacity-100 transition-opacity">
@@ -68,19 +68,19 @@ export function CreditsWidget() {
           </span>
         </Link>
         <div className="flex items-center gap-1">
-          <span className="material-symbols-outlined text-primary text-[14px]">toll</span>
-          <span className="text-[10px] font-bold text-foreground">
+          <span className="material-symbols-outlined text-app-brand text-[14px]">toll</span>
+          <span className="text-[10px] font-bold text-text-primary">
             {loading ? "..." : `${credits ?? 0} left`}
           </span>
         </div>
       </div>
 
       {/* Credits progress bar */}
-      <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+      <div className="h-1.5 w-full bg-app-inset rounded-full overflow-hidden">
         <div
           className={cn(
             "h-full rounded-full transition-all duration-500",
-            isLow ? "bg-amber-500" : "bg-primary"
+            isLow ? "bg-amber-500" : "bg-app-brand"
           )}
           style={{ width: `${Math.min(((credits ?? 0) / 100) * 100, 100)}%` }}
         />
@@ -90,10 +90,10 @@ export function CreditsWidget() {
         size="sm"
         asChild
         className={cn(
-          "w-full h-8 text-[11px] font-bold rounded-lg shadow-sm transition-all",
+          "w-full h-8 text-[11px] font-bold rounded-lg transition-all border-none",
           isLow 
-            ? "bg-amber-500 hover:bg-amber-600 text-white animate-pulse shadow-md shadow-amber-500/20"
-            : "bg-primary text-primary-foreground"
+            ? "bg-amber-500 hover:bg-amber-600 text-white"
+            : "bg-app-brand hover:bg-app-brand-hover text-white"
         )}
       >
         <Link href="/dashboard/billing">

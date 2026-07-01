@@ -7,6 +7,11 @@ import { WorkspaceContent } from "./workspace-client";
 
 export const dynamic = 'force-dynamic';
 
+export const metadata = {
+  title: "AI Study Workspace",
+  description: "Your interactive AI learning space. Review materials, generate flashcards, solve quizzes, and inspect mindmaps.",
+};
+
 export default function WorkspacePage() {
   return (
     <Suspense

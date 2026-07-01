@@ -75,36 +75,33 @@ export function StudySetCreator() {
   };
 
   return (
-    <Card className="relative border-muted/50 overflow-hidden">
+    <Card className="relative border border-app-border bg-app-card rounded-xl overflow-hidden shadow-sm">
       <NoiseTexture className="opacity-[0.05] dark:opacity-[0.1]" />
-      <CardHeader className="bg-muted/30 pb-4 relative z-10">
-        <CardTitle>Create New Study Set</CardTitle>
-        <CardDescription>Upload files or paste text to generate your interactive study suite.</CardDescription>
+      <CardHeader className="border-b border-app-border bg-app-inset/30 pb-4 relative z-10">
+        <CardTitle className="text-text-primary text-xl font-bold">Create New Study Set</CardTitle>
+        <CardDescription className="text-text-secondary text-xs">Upload files or paste text to generate your interactive study suite.</CardDescription>
       </CardHeader>
       <CardContent className="pt-6 relative z-10 space-y-4">
         <div className="w-full">
           <AI_Input_Search 
             placeholder="Paste your notes here or upload a file..."
             searchLabel="Analyze"
+            costText={`Costs ${CREDIT_COSTS.study_set} credits`}
             onSubmit={handleGenerate}
             disabled={!!status}
           />
         </div>
-        <p className="text-[10px] text-muted-foreground/60 text-right px-1 flex items-center justify-end gap-1 select-none">
-          <span className="material-symbols-outlined text-[12px] text-primary">toll</span>
-          Generating a full suite costs {CREDIT_COSTS.study_set} credits
-        </p>
 
         {status === 'uploading' && (
-          <div className="flex items-center gap-2 text-sm text-blue-500 animate-pulse bg-blue-500/5 p-3 rounded-xl border border-blue-500/20">
+          <div className="flex items-center gap-2 text-sm text-blue-500 animate-pulse bg-blue-500/5 p-3 rounded-lg border border-blue-500/20">
             <span className="material-symbols-outlined animate-spin text-blue-500">cloud_upload</span>
             Uploading your material to secure storage...
           </div>
         )}
 
         {status === 'generating' && (
-          <div className="flex items-center gap-2 text-sm text-primary animate-pulse bg-primary/5 p-3 rounded-xl border border-primary/20">
-            <span className="material-symbols-outlined animate-spin text-primary">auto_awesome</span>
+          <div className="flex items-center gap-2 text-sm text-app-brand animate-pulse bg-app-brand/5 p-3 rounded-lg border border-app-brand/20">
+            <span className="material-symbols-outlined animate-spin text-app-brand">auto_awesome</span>
             AI is analyzing your materials and generating your suite...
           </div>
         )}
@@ -117,10 +114,10 @@ export function StudySetCreator() {
                 {result.category}
               </span>
             </div>
-            <p className="text-xs text-muted-foreground mb-3">{result.description}</p>
+            <p className="text-xs text-text-secondary mb-3">{result.description}</p>
             <Button 
               size="sm" 
-              className="w-full bg-emerald-500 text-white hover:bg-emerald-600 border-none shadow-lg shadow-emerald-500/20"
+              className="w-full bg-emerald-600 text-white hover:bg-emerald-700 border-none shadow-sm rounded-lg"
               onClick={() => router.push(`/dashboard/workspace?id=${result.id}`)}
             >
               Open Workspace

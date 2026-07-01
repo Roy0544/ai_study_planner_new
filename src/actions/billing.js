@@ -335,3 +335,51 @@ export async function redeemVoucher(code) {
   }
 }
 
+// ─── Refund credits for a failed generation task ─────────────────────────────
+export async function refundCredits(taskType) {
+  try {
+    const supabase = await getSupabaseServerClient();
+    const adminClient = getSupabaseAdminClient();
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) throw new Error("Authentication required");
+
+    const cost = CREDIT_COSTS[taskType];
+    if (!cost) throw new Error(`Unknown task type: ${taskType}`);
+
+    // 1. Fetch current credit balance
+    const { data: profile, error: profileError } = await adminClient
+      .from("profiles")
+      .select("credits")
+      .eq("id", user.id)
+      .single();
+
+    if (profileError) throw profileError;
+
+    const currentCredits = profile?.credits || 0;
+    const newCredits = currentCredits + cost;
+
+    // 2. Refund credits
+    const { error: updateError } = await adminClient
+      .from("profiles")
+      .update({ credits: newCredits, updated_at: new Date().toISOString() })
+      .eq("id", user.id);
+
+    if (updateError) throw updateError;
+
+    // 3. Log the refund transaction
+    await adminClient.from("credit_transactions").insert({
+      user_id: user.id,
+      type: `refund_${taskType}`,
+      amount: cost,
+      description: `Refunded ${cost} credits due to failed ${taskType.replace(/_/g, " ")} generation`,
+    });
+
+    console.log(`Successfully refunded ${cost} credits to user ${user.id} for task ${taskType}`);
+    return { success: true, newCredits };
+  } catch (error) {
+    console.error("Credit refund failed:", error.message);
+    return { success: false, error: error.message };
+  }
+}
+
