@@ -4,6 +4,7 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { parseOffice } from "officeparser";
 import { deductCredits, refundCredits } from "./billing";
+import { checkRateLimit } from "../lib/rate-limiter";
 
 async function getSupabaseServerClient() {
   const cookieStore = await cookies();
@@ -138,6 +139,11 @@ async function extractTextFromOfficeFile(fileUrl) {
 }
 
 export async function generateStudySets(content, fileUrl) {
+  const rateLimit = await checkRateLimit();
+  if (rateLimit.limited) {
+    return { success: false, error: `Rate limit exceeded. Please wait ${rateLimit.retryAfter} seconds.` };
+  }
+
   const apiKey = process.env.GEMINI_API_KEY;
 
   if (!apiKey) {
@@ -411,6 +417,11 @@ export async function fetchStudySetById(id) {
 }
 
 export async function generateMindMap(setId, content, fileUrl) {
+  const rateLimit = await checkRateLimit();
+  if (rateLimit.limited) {
+    return { success: false, error: `Rate limit exceeded. Please wait ${rateLimit.retryAfter} seconds.` };
+  }
+
    const creditCheck = await deductCredits("mindmap");                                                                                            
       if (!creditCheck.success) {                                                                                                                    
         return {                                                                                                                                     
@@ -524,6 +535,11 @@ export async function generateMindMap(setId, content, fileUrl) {
 }
 
 export async function generateFlashcards(setId, content, fileUrl) {
+  const rateLimit = await checkRateLimit();
+  if (rateLimit.limited) {
+    return { success: false, error: `Rate limit exceeded. Please wait ${rateLimit.retryAfter} seconds.` };
+  }
+
    const creditCheck = await deductCredits("flashcards");                                                                                            
       if (!creditCheck.success) {                                                                                                                    
         return {                                                                                                                                     
@@ -620,6 +636,11 @@ export async function generateFlashcards(setId, content, fileUrl) {
 }
 
 export async function generateQuiz(setId, content, fileUrl) {
+  const rateLimit = await checkRateLimit();
+  if (rateLimit.limited) {
+    return { success: false, error: `Rate limit exceeded. Please wait ${rateLimit.retryAfter} seconds.` };
+  }
+
    const creditCheck = await deductCredits("quiz");                                                                                            
       if (!creditCheck.success) {                                                                                                                    
         return {                                                                                                                                     
@@ -733,6 +754,11 @@ export async function deleteStudySet(id) {
 }
 
 export async function generateQuickNote(question, correctAnswer, content) {
+  const rateLimit = await checkRateLimit();
+  if (rateLimit.limited) {
+    return { success: false, error: `Rate limit exceeded. Please wait ${rateLimit.retryAfter} seconds.` };
+  }
+
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) return { success: false, error: "API Key missing" };
 

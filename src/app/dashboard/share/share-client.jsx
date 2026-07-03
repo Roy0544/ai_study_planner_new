@@ -121,6 +121,8 @@ export default function SharingHubPage() {
   
   const [currentUserId, setCurrentUserId] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [activeUsersCount, setActiveUsersCount] = useState(1);
+  const [activeDocViewers, setActiveDocViewers] = useState(1);
   const fileInputRef = useRef(null);
 
   // Load data from DB on mount
@@ -151,6 +153,8 @@ export default function SharingHubPage() {
     loadInitialData();
   }, []);
 
+
+
   const refreshData = async () => {
     try {
       const [docsRes, reqsRes] = await Promise.all([
@@ -176,6 +180,73 @@ export default function SharingHubPage() {
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [isRequestOpen, setIsRequestOpen] = useState(false);
   const [isFulfillingReq, setIsFulfillingReq] = useState(null); // Request object being fulfilled
+
+  // ─── Presence: Global Hub Scholars Online ──────────────────────────────────
+  useEffect(() => {
+    if (!currentUserId) return;
+
+    const channel = client.channel("presence-sharing-hub", {
+      config: {
+        presence: {
+          key: currentUserId,
+        },
+      },
+    });
+
+    channel
+      .on("presence", { event: "sync" }, () => {
+        const state = channel.presenceState();
+        const count = Object.keys(state).length;
+        setActiveUsersCount(Math.max(1, count));
+      })
+      .subscribe(async (status) => {
+        if (status === "SUBSCRIBED") {
+          await channel.track({
+            online_at: new Date().toISOString(),
+            user_id: currentUserId,
+          });
+        }
+      });
+
+    return () => {
+      channel.unsubscribe();
+    };
+  }, [currentUserId]);
+
+  // ─── Presence: Document Viewer Collaboration ──────────────────────────────
+  useEffect(() => {
+    if (!isPreviewOpen || !previewDoc || !currentUserId) {
+      setActiveDocViewers(1);
+      return;
+    }
+
+    const docChannel = client.channel(`doc-${previewDoc.id}`, {
+      config: {
+        presence: {
+          key: currentUserId,
+        },
+      },
+    });
+
+    docChannel
+      .on("presence", { event: "sync" }, () => {
+        const state = docChannel.presenceState();
+        const count = Object.keys(state).length;
+        setActiveDocViewers(Math.max(1, count));
+      })
+      .subscribe(async (status) => {
+        if (status === "SUBSCRIBED") {
+          await docChannel.track({
+            online_at: new Date().toISOString(),
+            user_id: currentUserId,
+          });
+        }
+      });
+
+    return () => {
+      docChannel.unsubscribe();
+    };
+  }, [isPreviewOpen, previewDoc?.id, currentUserId]);
   
   // Form States
   const [uploadForm, setUploadForm] = useState({
@@ -655,7 +726,7 @@ export default function SharingHubPage() {
   return (
     <main className="p-6 space-y-8 max-w-7xl mx-auto w-full flex-1 relative">
       {/* Toast Messages */}
-      <div className="fixed top-4 right-4 z-50 flex flex-col gap-2 max-w-md">
+      <div className="fixed top-4 left-4 z-50 flex flex-col gap-2 pointer-events-none">
         <AnimatePresence>
           {toasts.map((toast) => (
             <motion.div
@@ -663,16 +734,24 @@ export default function SharingHubPage() {
               initial={{ opacity: 0, y: -20, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, scale: 0.9 }}
-              className={`p-4 rounded-xl border shadow-xl flex items-center gap-3 text-sm ${
+              className={`p-4 rounded-xl border shadow-xl flex items-start justify-between gap-3 text-xs pointer-events-auto ${
                 toast.type === "error"
-                  ? "bg-red-950/80 border-red-500/30 text-red-200"
-                  : "bg-surface-container-high/90 border-primary/20 text-[#c0c1ff]"
-              } backdrop-blur-xl`}
+                  ? "bg-red-950/90 border-red-500/20 text-red-200"
+                  : "bg-surface-container-high/90 border-app-border text-text-primary"
+              } backdrop-blur-md`}
             >
-              <span className="material-symbols-outlined text-[18px]">
-                {toast.type === "error" ? "error" : "check_circle"}
-              </span>
-              <p className="font-medium">{toast.message}</p>
+              <div className="flex gap-2.5 items-start">
+                <span className={`material-symbols-outlined text-[16px] mt-0.5 shrink-0 ${toast.type === "error" ? "text-red-400" : "text-emerald-400"}`}>
+                  {toast.type === "error" ? "error" : "check_circle"}
+                </span>
+                <p className="font-semibold leading-relaxed pr-2">{toast.message}</p>
+              </div>
+              <button 
+                onClick={() => setToasts((prev) => prev.filter((t) => t.id !== toast.id))}
+                className="text-text-secondary hover:text-text-primary transition-colors shrink-0 mt-0.5"
+              >
+                <span className="material-symbols-outlined text-[14px]">close</span>
+              </button>
             </motion.div>
           ))}
         </AnimatePresence>
@@ -681,9 +760,18 @@ export default function SharingHubPage() {
       {/* Header Banner */}
       <section className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-app-card border border-app-border p-6 md:p-8 rounded-xl relative overflow-hidden shadow-sm">
         <div className="space-y-3 relative z-10 max-w-2xl">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-app-brand/10 border border-app-brand/20">
-            <span className="w-1.5 h-1.5 rounded-full bg-app-brand animate-pulse" />
-            <span className="text-[10px] uppercase font-bold tracking-wider text-app-brand">GKVK Community Hub</span>
+          <div className="flex flex-wrap gap-2 items-center">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-app-brand/10 border border-app-brand/20">
+              <span className="w-1.5 h-1.5 rounded-full bg-app-brand animate-pulse" />
+              <span className="text-[10px] uppercase font-bold tracking-wider text-app-brand">GKVK Community Hub</span>
+            </div>
+            
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="text-[10px] uppercase font-bold tracking-wider text-emerald-400">
+                {activeUsersCount} {activeUsersCount === 1 ? 'Student' : 'Students'} Online
+              </span>
+            </div>
           </div>
           <h1 className="text-3xl font-extrabold text-text-primary tracking-tight leading-none md:text-4xl">
             Notes & Papers Sharing Hub
@@ -1216,6 +1304,13 @@ export default function SharingHubPage() {
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">File Size:</span>
                         <span className="font-semibold">{previewDoc.fileSize} ({previewDoc.fileType})</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Active Viewers:</span>
+                        <span className="font-semibold text-emerald-400 flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                          {activeDocViewers} studying
+                        </span>
                       </div>
                     </div>
                   </div>
