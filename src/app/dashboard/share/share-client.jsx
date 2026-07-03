@@ -16,9 +16,72 @@ import {
   toggleUpvoteDocument, 
   toggleUpvoteRequest, 
   incrementDownloadCount, 
-  fulfillDocumentRequest 
+  fulfillDocumentRequest,
+  fetchSharedDocumentById
 } from "@/actions/notes";
 import client, { uploadHandler } from "@/config/client";
+import Image from "next/image";
+
+function useDebounce(value, delay = 300) {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+  return debouncedValue;
+}
+
+function DocumentCardSkeleton() {
+  return (
+    <div className="p-6 rounded-xl bg-app-card border border-app-border animate-pulse flex flex-col justify-between min-h-[220px]">
+      <div>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-app-inset/60" />
+            <div className="h-3 w-20 bg-app-inset/60 rounded" />
+          </div>
+          <div className="h-6 w-12 bg-app-inset/60 rounded-lg" />
+        </div>
+        <div className="space-y-2">
+          <div className="flex gap-2">
+            <div className="h-5 w-16 bg-app-inset/60 rounded-lg" />
+            <div className="h-5 w-24 bg-app-inset/60 rounded-lg" />
+          </div>
+          <div className="h-4 w-3/4 bg-app-inset/60 rounded" />
+          <div className="h-3 w-full bg-app-inset/60 rounded" />
+        </div>
+      </div>
+      <div className="mt-6 pt-4 border-t border-app-border flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="w-5 h-5 rounded-full bg-app-inset/60" />
+          <div className="h-3 w-16 bg-app-inset/60 rounded" />
+        </div>
+        <div className="h-8 w-12 bg-app-inset/60 rounded-lg" />
+      </div>
+    </div>
+  );
+}
+
+function RequestCardSkeleton() {
+  return (
+    <div className="p-5 rounded-xl bg-app-card border border-app-border animate-pulse flex items-start gap-4">
+      <div className="w-12 h-12 bg-app-inset/60 rounded-xl shrink-0" />
+      <div className="flex-1 space-y-2">
+        <div className="flex items-center gap-2">
+          <div className="h-4 w-16 bg-app-inset/60 rounded" />
+          <div className="h-3 w-12 bg-app-inset/60 rounded" />
+        </div>
+        <div className="h-4 w-1/2 bg-app-inset/60 rounded" />
+        <div className="h-3 w-24 bg-app-inset/60 rounded" />
+      </div>
+      <div className="h-8 w-16 bg-app-inset/60 rounded-lg shrink-0" />
+    </div>
+  );
+}
 
 const CATEGORIES = [
   "All",
@@ -159,9 +222,39 @@ export default function SharingHubPage() {
   const handleUpvoteDoc = async (e, docId) => {
     e.stopPropagation();
     e.preventDefault();
+
+    let rollbackDoc = null;
+    let newUpvoted = false;
+    let newUpvotesCount = 0;
+
+    setDocuments((prev) =>
+      prev.map((doc) => {
+        if (doc.id === docId) {
+          rollbackDoc = { ...doc };
+          newUpvoted = !doc.upvoted;
+          newUpvotesCount = doc.upvoted ? Math.max(0, doc.upvotes - 1) : doc.upvotes + 1;
+          return { ...doc, upvoted: newUpvoted, upvotes: newUpvotesCount };
+        }
+        return doc;
+      })
+    );
+
+    setPreviewDoc((prev) => {
+      if (prev && prev.id === docId) {
+        return { ...prev, upvoted: newUpvoted, upvotes: newUpvotesCount };
+      }
+      return prev;
+    });
+
     try {
       const res = await toggleUpvoteDocument(docId);
-      if (res.success) {
+      if (!res.success) {
+        if (rollbackDoc) {
+          setDocuments((prev) => prev.map((doc) => (doc.id === docId ? rollbackDoc : doc)));
+          setPreviewDoc((prev) => (prev && prev.id === docId ? rollbackDoc : prev));
+        }
+        triggerToast(res.error || "Failed to update upvote", "error");
+      } else {
         setDocuments((prev) =>
           prev.map((doc) => {
             if (doc.id === docId) {
@@ -170,29 +263,49 @@ export default function SharingHubPage() {
             return doc;
           })
         );
-        
-        // Sync previewDoc state if it is currently displaying the upvoted doc
         setPreviewDoc((prev) => {
           if (prev && prev.id === docId) {
             return { ...prev, upvoted: res.upvoted, upvotes: res.upvotesCount };
           }
           return prev;
         });
-
         triggerToast(res.upvoted ? "Upvoted document!" : "Removed upvote");
-      } else {
-        triggerToast(res.error || "Failed to update upvote", "error");
       }
     } catch (err) {
       console.error(err);
+      if (rollbackDoc) {
+        setDocuments((prev) => prev.map((doc) => (doc.id === docId ? rollbackDoc : doc)));
+        setPreviewDoc((prev) => (prev && prev.id === docId ? rollbackDoc : prev));
+      }
       triggerToast("Error updating upvote", "error");
     }
   };
 
   const handleUpvoteReq = async (reqId) => {
+    let rollbackReq = null;
+    let newUpvoted = false;
+    let newUpvotesCount = 0;
+
+    setRequests((prev) =>
+      prev.map((req) => {
+        if (req.id === reqId) {
+          rollbackReq = { ...req };
+          newUpvoted = !req.upvoted;
+          newUpvotesCount = req.upvoted ? Math.max(0, req.upvotes - 1) : req.upvotes + 1;
+          return { ...req, upvoted: newUpvoted, upvotes: newUpvotesCount };
+        }
+        return req;
+      })
+    );
+
     try {
       const res = await toggleUpvoteRequest(reqId);
-      if (res.success) {
+      if (!res.success) {
+        if (rollbackReq) {
+          setRequests((prev) => prev.map((req) => (req.id === reqId ? rollbackReq : req)));
+        }
+        triggerToast(res.error || "Failed to update upvote", "error");
+      } else {
         setRequests((prev) =>
           prev.map((req) => {
             if (req.id === reqId) {
@@ -202,11 +315,12 @@ export default function SharingHubPage() {
           })
         );
         triggerToast(res.upvoted ? "Upvoted request!" : "Removed upvote");
-      } else {
-        triggerToast(res.error || "Failed to update upvote", "error");
       }
     } catch (err) {
       console.error(err);
+      if (rollbackReq) {
+        setRequests((prev) => prev.map((req) => (req.id === reqId ? rollbackReq : req)));
+      }
       triggerToast("Error updating upvote", "error");
     }
   };
@@ -251,6 +365,7 @@ export default function SharingHubPage() {
         setDocuments(prevDocs =>
           prevDocs.map(d => d.id === doc.id ? { ...d, downloads: res.downloadsCount } : d)
         );
+        setPreviewDoc(prev => prev && prev.id === doc.id ? { ...prev, downloads: res.downloadsCount } : prev);
       }
       triggerToast(`Successfully downloaded "${doc.title}"!`);
       
@@ -468,12 +583,14 @@ export default function SharingHubPage() {
     setIsUploadOpen(true);
   };
 
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
+
   // Filtering Logic
   const filteredDocuments = documents.filter((doc) => {
     const matchesSearch =
-      doc.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      doc.course.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      doc.description.toLowerCase().includes(searchQuery.toLowerCase());
+      doc.title.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
+      doc.course.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
+      (doc.description || "").toLowerCase().includes(debouncedSearchQuery.toLowerCase());
     
     const matchesCategory =
       selectedCategory === "All" || doc.category === selectedCategory;
@@ -740,7 +857,13 @@ export default function SharingHubPage() {
               </div>
             </div>
 
-            {requests.length > 0 ? (
+            {loading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {[1, 2, 3, 4].map((i) => (
+                  <RequestCardSkeleton key={i} />
+                ))}
+              </div>
+            ) : requests.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {requests.map((req) => (
                   <div
@@ -808,14 +931,28 @@ export default function SharingHubPage() {
         ) : (
           /* DOCUMENTS GRID VIEW */
           <>
-            {sortedDocuments.length > 0 ? (
+            {loading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {[1, 2, 3, 4, 5, 6].map((i) => (
+                  <DocumentCardSkeleton key={i} />
+                ))}
+              </div>
+            ) : sortedDocuments.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {sortedDocuments.map((doc) => (
                   <div
                     key={doc.id}
-                    onClick={() => {
+                    onClick={async () => {
                       setPreviewDoc(doc);
                       setIsPreviewOpen(true);
+                      try {
+                        const fullDocRes = await fetchSharedDocumentById(doc.id);
+                        if (fullDocRes.success) {
+                          setPreviewDoc(fullDocRes.data);
+                        }
+                      } catch (err) {
+                        console.error("Failed to load document details:", err);
+                      }
                     }}
                     className="p-6 rounded-xl bg-app-card border border-app-border hover:-translate-y-0.5 transition-all duration-250 flex flex-col justify-between cursor-pointer group shadow-sm hover:shadow-md relative overflow-hidden"
                   >
@@ -872,9 +1009,12 @@ export default function SharingHubPage() {
                     {/* Card Footer */}
                     <div className="mt-6 pt-4 border-t border-app-border flex items-center justify-between text-[11px] text-text-secondary">
                       <div className="flex items-center gap-2">
-                        <img
+                        <Image
                           src={doc.uploader.avatar}
                           alt={doc.uploader.name}
+                          width={20}
+                          height={20}
+                          unoptimized
                           className="w-5 h-5 rounded-full border border-app-border bg-app-inset"
                         />
                         <span className="font-semibold text-text-primary truncate max-w-[100px]">{doc.uploader.name}</span>
@@ -1013,18 +1153,27 @@ export default function SharingHubPage() {
 
                     {/* Interactive document viewer */}
                     <div className="flex-grow min-h-[300px] md:min-h-[450px] relative rounded-xl overflow-hidden bg-black/20 border border-muted-foreground/10">
-                      <iframe 
-                        src={
-                          previewDoc.fileType?.toLowerCase() === 'pdf' 
-                            ? `${previewDoc.file_url}#toolbar=0` // disable toolbar inside preview
-                            : `https://docs.google.com/viewer?url=${encodeURIComponent(previewDoc.file_url)}&embedded=true`
-                        } 
-                        className="w-full h-full absolute inset-0 border-0 bg-white"
-                        title={previewDoc.title}
-                      />
-                      {/* Block access to Google Viewer's pop-out icon button */}
-                      {previewDoc.fileType?.toLowerCase() !== 'pdf' && (
-                        <div className="absolute top-0 right-0 w-14 h-14 bg-transparent z-10 cursor-default" />
+                      {previewDoc.file_url === undefined ? (
+                        <div className="w-full h-full absolute inset-0 bg-app-inset flex flex-col items-center justify-center text-center space-y-3 animate-pulse">
+                          <span className="material-symbols-outlined text-4xl text-app-brand animate-spin">sync</span>
+                          <p className="text-xs text-text-secondary">Loading secure document preview...</p>
+                        </div>
+                      ) : (
+                        <>
+                          <iframe 
+                            src={
+                              previewDoc.fileType?.toLowerCase() === 'pdf' 
+                                ? `${previewDoc.file_url}#toolbar=0` // disable toolbar inside preview
+                                : `https://docs.google.com/viewer?url=${encodeURIComponent(previewDoc.file_url || "")}&embedded=true`
+                            } 
+                            className="w-full h-full absolute inset-0 border-0 bg-white"
+                            title={previewDoc.title}
+                          />
+                          {/* Block access to Google Viewer's pop-out icon button */}
+                          {previewDoc.fileType?.toLowerCase() !== 'pdf' && (
+                            <div className="absolute top-0 right-0 w-14 h-14 bg-transparent z-10 cursor-default" />
+                          )}
+                        </>
                       )}
                     </div>
 
@@ -1073,9 +1222,12 @@ export default function SharingHubPage() {
 
                   <div className="p-3 bg-muted/20 border border-muted-foreground/5 rounded-xl text-xs space-y-1.5">
                     <div className="flex items-center gap-1.5">
-                      <img
+                      <Image
                         src={previewDoc.uploader.avatar}
                         alt={previewDoc.uploader.name}
+                        width={20}
+                        height={20}
+                        unoptimized
                         className="w-5 h-5 rounded-full border border-muted-foreground/20"
                       />
                       <span className="font-semibold text-foreground/80">Uploaded by {previewDoc.uploader.name}</span>
@@ -1085,7 +1237,15 @@ export default function SharingHubPage() {
 
                   <div className="space-y-2">
                     <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Description</h4>
-                    <p className="text-xs text-muted-foreground leading-relaxed">{previewDoc.description}</p>
+                    {previewDoc.description === undefined ? (
+                      <div className="space-y-2 animate-pulse mt-1">
+                        <div className="h-3 w-full bg-app-inset/60 rounded" />
+                        <div className="h-3 w-5/6 bg-app-inset/60 rounded" />
+                        <div className="h-3 w-4/5 bg-app-inset/60 rounded" />
+                      </div>
+                    ) : (
+                      <p className="text-xs text-muted-foreground leading-relaxed">{previewDoc.description}</p>
+                    )}
                   </div>
                 </div>
 
@@ -1115,11 +1275,11 @@ export default function SharingHubPage() {
                     {/* Download PDF */}
                     <Button
                       onClick={(e) => handleDownload(e, previewDoc)}
-                      disabled={downloadingDocs[previewDoc.id] !== undefined}
+                      disabled={downloadingDocs[previewDoc.id] !== undefined || previewDoc.file_url === undefined}
                       className="flex-1 rounded-xl font-bold h-10 text-xs bg-primary text-primary-foreground hover:bg-primary/95"
                     >
                       <span className="material-symbols-outlined mr-1.5 text-[14px]">download</span>
-                      {downloadingDocs[previewDoc.id] !== undefined ? "Downloading..." : "Download"}
+                      {previewDoc.file_url === undefined ? "Loading..." : downloadingDocs[previewDoc.id] !== undefined ? "Downloading..." : "Download"}
                     </Button>
                   </div>
                 </div>

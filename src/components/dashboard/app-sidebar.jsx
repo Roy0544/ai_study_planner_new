@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { MagicCard } from "@/components/ui/magic-card";
+import Image from "next/image";
 import { BorderBeam } from "@/components/ui/magic-card";
 import { AnimatedGradientText } from "@/components/ui/animated-gradient-text";
 import { CreditsWidget } from "@/components/dashboard/credits-widget";
@@ -35,7 +36,14 @@ export function AppSidebar() {
       <SidebarHeader className="p-6">
         <Link href="/dashboard" onClick={handleLinkClick} className="flex items-center gap-3 px-2 group">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl overflow-hidden shadow-sm border border-app-border group-hover:scale-105 transition-transform">
-            <img src="/logo.jpg" alt="GKVK AI Logo" className="h-full w-full object-cover" />
+            <Image
+              src="/logo.jpg"
+              alt="GKVK AI Logo"
+              width={40}
+              height={40}
+              priority
+              className="h-full w-full object-cover"
+            />
           </div>
           <div className="flex flex-col">
             <span className="text-lg font-bold leading-none tracking-tight">GKVK_AI</span>

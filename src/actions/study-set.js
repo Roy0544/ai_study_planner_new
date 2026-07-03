@@ -162,7 +162,7 @@ export async function generateStudySets(content, fileUrl) {
 
   try {
     const model = genAI.getGenerativeModel({ 
-      model: "gemini-1.5-flash",
+      model: "gemini-3.5-flash",
       systemInstruction: SYSTEM_PROMPT,
       generationConfig: { 
         responseMimeType: "application/json",
@@ -428,7 +428,7 @@ export async function generateMindMap(setId, content, fileUrl) {
 
   try {
     const model = genAI.getGenerativeModel({ 
-      model: "gemini-1.5-flash",
+      model: "gemini-2.5-flash",
       generationConfig: {
         responseMimeType: "application/json",
         responseSchema: {
@@ -541,7 +541,7 @@ export async function generateFlashcards(setId, content, fileUrl) {
 
   try {
     const model = genAI.getGenerativeModel({ 
-      model: "gemini-1.5-flash",
+      model: "gemini-2.5-flash",
       generationConfig: { 
         responseMimeType: "application/json",
         responseSchema: {
@@ -637,7 +637,7 @@ export async function generateQuiz(setId, content, fileUrl) {
 
   try {
     const model = genAI.getGenerativeModel({ 
-      model: "gemini-1.5-flash",
+      model: "gemini-2.5-flash",
       generationConfig: { 
         responseMimeType: "application/json",
         responseSchema: {
@@ -738,7 +738,7 @@ export async function generateQuickNote(question, correctAnswer, content) {
 
   const genAI = new GoogleGenerativeAI(apiKey);
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
     const prompt = `Provide a short study note for: Question: "${question}", Correct Answer: "${correctAnswer}". Material: ${content}`;
     const result = await model.generateContent(prompt);
     return { success: true, data: result.response.text() };

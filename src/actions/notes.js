@@ -37,7 +37,17 @@ export async function fetchSharedDocuments({ category = "All", type = "all", sea
     let query = supabase
       .from("shared_documents")
       .select(`
-        *,
+        id,
+        title,
+        course,
+        category,
+        type,
+        file_type,
+        file_size,
+        upvotes_count,
+        downloads_count,
+        created_at,
+        user_id,
         uploader:profiles!shared_documents_user_id_fkey(id, full_name, email)
       `);
 
@@ -90,6 +100,8 @@ export async function fetchSharedDocuments({ category = "All", type = "all", sea
     // Map profile data to match original frontend uploader structure
     const formattedData = data.map(doc => ({
       ...doc,
+      fileType: doc.file_type,
+      fileSize: doc.file_size,
       upvotes: doc.upvotes_count,
       downloads: doc.downloads_count,
       upvoted: upvotedSet.has(doc.id),
@@ -170,6 +182,8 @@ export async function shareDocument(documentData) {
         file_size: documentData.fileSize,
         file_type: documentData.fileType,
         description: documentData.description,
+        downloads_count: 0,
+        upvotes_count: 0
       })
       .select()
       .single();
@@ -223,7 +237,7 @@ export async function toggleUpvoteDocument(documentId) {
     // 1. Check if vote already exists
     const { data: existing, error: fetchError } = await supabase
       .from("document_upvotes")
-      .select("*")
+      .select("document_id")
       .eq("user_id", user.id)
       .eq("document_id", documentId)
       .maybeSingle();
@@ -281,7 +295,7 @@ export async function toggleUpvoteRequest(requestId) {
 
     const { data: existing, error: fetchError } = await supabase
       .from("request_upvotes")
-      .select("*")
+      .select("request_id")
       .eq("user_id", user.id)
       .eq("request_id", requestId)
       .maybeSingle();
@@ -344,16 +358,18 @@ export async function incrementDownloadCount(documentId) {
 
     if (fetchError) throw fetchError;
 
+    const currentCount = doc?.downloads_count || 0;
+
     // Increment downloads count
     const { error: updateError } = await supabase
       .from("shared_documents")
-      .update({ downloads_count: doc.downloads_count + 1 })
+      .update({ downloads_count: currentCount + 1 })
       .eq("id", documentId);
 
     if (updateError) throw updateError;
 
     revalidatePath("/dashboard/share");
-    return { success: true, downloadsCount: doc.downloads_count + 1 };
+    return { success: true, downloadsCount: currentCount + 1 };
   } catch (error) {
     console.error("Failed to increment download count:", error.message);
     return { success: false, error: error.message };
@@ -383,6 +399,65 @@ export async function fulfillDocumentRequest(requestId, documentData) {
     return { success: true, document: shareResult.data };
   } catch (error) {
     console.error("Failed to fulfill request:", error.message);
+    return { success: false, error: error.message };
+  }
+}
+
+// ─── Fetch Shared Document by ID ─────────────────────────────────────────────
+export async function fetchSharedDocumentById(documentId) {
+  try {
+    const supabase = await getSupabaseServerClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) return { success: false, error: "Not authenticated" };
+
+    const { data, error } = await supabase
+      .from("shared_documents")
+      .select(`
+        id,
+        title,
+        course,
+        category,
+        type,
+        file_type,
+        file_size,
+        description,
+        file_url,
+        upvotes_count,
+        downloads_count,
+        created_at,
+        user_id,
+        uploader:profiles!shared_documents_user_id_fkey(id, full_name, email)
+      `)
+      .eq("id", documentId)
+      .single();
+
+    if (error) throw error;
+
+    // Check if upvoted by the current user
+    const { data: hasUpvote } = await supabase
+      .from("document_upvotes")
+      .select("document_id")
+      .eq("user_id", user.id)
+      .eq("document_id", documentId)
+      .maybeSingle();
+
+    const formattedDoc = {
+      ...data,
+      fileType: data.file_type,
+      fileSize: data.file_size,
+      fileUrl: data.file_url,
+      upvotes: data.upvotes_count,
+      downloads: data.downloads_count,
+      upvoted: !!hasUpvote,
+      uploader: {
+        name: data.uploader?.full_name || data.uploader?.email?.split("@")[0] || "Unknown",
+        avatar: `https://api.dicebear.com/7.x/adventurer/svg?seed=${data.uploader?.full_name || "User"}`
+      }
+    };
+
+    return { success: true, data: formattedDoc };
+  } catch (error) {
+    console.error("Failed to fetch document by ID:", error.message);
     return { success: false, error: error.message };
   }
 }

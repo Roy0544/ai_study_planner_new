@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import Image from "next/image";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { FlickeringGrid } from "@/components/ui/flickering-grid";
@@ -73,7 +74,14 @@ export default function LoginClient() {
         <div className="relative z-10">
           <Link href="/" className="flex items-center gap-3 group w-fit">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl overflow-hidden shadow-sm border border-app-border group-hover:scale-105 transition-transform">
-              <img src="/logo.jpg" alt="GKVK AI Logo" className="h-full w-full object-cover" />
+              <Image
+                src="/logo.jpg"
+                alt="GKVK AI Logo"
+                width={40}
+                height={40}
+                priority
+                className="h-full w-full object-cover"
+              />
             </div>
             <div className="flex flex-col">
               <span className="text-lg font-bold leading-none tracking-tight">GKVK_AI</span>

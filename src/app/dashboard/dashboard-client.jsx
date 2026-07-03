@@ -1,8 +1,19 @@
 "use client";
 
 import { motion } from "motion/react";
-import { StudySetCreator } from "@/components/dashboard/study-set-creator";
 import { HyperText } from "@/components/ui/hyper-text";
+import dynamic from "next/dynamic";
+
+const StudySetCreator = dynamic(() => import("@/components/dashboard/study-set-creator").then(mod => mod.StudySetCreator), {
+  loading: () => (
+    <div className="h-48 rounded-xl bg-app-card border border-app-border animate-pulse flex flex-col justify-center items-center text-center p-6 space-y-3">
+      <div className="w-10 h-10 rounded-xl bg-app-inset/60" />
+      <div className="h-4 w-48 bg-app-inset/60 rounded" />
+      <div className="h-3 w-72 bg-app-inset/60 rounded" />
+    </div>
+  ),
+  ssr: false
+});
 
 const containerVariants = {
   hidden: { opacity: 0 },
