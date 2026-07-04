@@ -3,6 +3,8 @@
 
 import { Suspense } from "react";
 import { WorkspaceContent } from "./workspace-client";
+import { getUserProfile } from "@/actions/study-set";
+import { redirect } from "next/navigation";
 
 export const dynamic = 'force-dynamic';
 
@@ -66,7 +68,12 @@ function WorkspaceSkeleton() {
   );
 }
 
-export default function WorkspacePage() {
+export default async function WorkspacePage() {
+  const userResult = await getUserProfile();
+  if (!userResult.success || !userResult.data) {
+    redirect("/login");
+  }
+
   return (
     <Suspense fallback={<WorkspaceSkeleton />}>
       <WorkspaceContent />

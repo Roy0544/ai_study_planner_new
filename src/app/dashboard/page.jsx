@@ -2,6 +2,7 @@ import { fetchStudySets, getUserProfile } from "@/actions/study-set";
 import { getUserCredits, getUserTransactions } from "@/actions/billing";
 import DashboardClient from "./dashboard-client";
 import { RecentStudySets } from "@/components/dashboard/recent-study-sets";
+import { redirect } from "next/navigation";
 
 export const dynamic = 'force-dynamic';
 
@@ -11,15 +12,19 @@ export const metadata = {
 };
 
 export default async function DashboardPage() {
-  const [setsResult, userResult, creditsResult, txResult] = await Promise.all([
+  const userResult = await getUserProfile();
+  if (!userResult.success || !userResult.data) {
+    redirect("/login");
+  }
+
+  const user = userResult.data;
+  const [setsResult, creditsResult, txResult] = await Promise.all([
     fetchStudySets(),
-    getUserProfile(),
     getUserCredits(),
     getUserTransactions(),
   ]);
 
   const sets = setsResult.success ? setsResult.data : [];
-  const user = userResult.success ? userResult.data : null;
   const credits = creditsResult.success ? (creditsResult.data?.credits || 0) : 0;
   const transactions = txResult.success ? txResult.data : [];
   const assetsGenerated = transactions.filter(tx => tx.amount < 0).length;

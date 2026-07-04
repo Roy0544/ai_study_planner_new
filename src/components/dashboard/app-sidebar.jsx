@@ -55,7 +55,7 @@ export function AppSidebar() {
       <SidebarContent className="px-4 mt-4">
         <SidebarMenu className="space-y-2">
           <SidebarMenuItem>
-            <SidebarMenuButton asChild isActive={pathname === "/dashboard"} tooltip="Dashboard" className="h-11 rounded-xl data-[active=true]:bg-app-brand/10 data-[active=true]:text-app-brand hover:text-app-brand hover:bg-app-brand/5 transition-all">
+            <SidebarMenuButton asChild isActive={pathname === "/dashboard"} tooltip="Dashboard" className="h-11 rounded-xl text-text-secondary data-[active=true]:bg-app-brand/10 data-[active=true]:text-app-brand hover:text-app-brand hover:bg-app-brand/5 transition-all">
               <Link href="/dashboard" onClick={handleLinkClick}>
                 <span className="material-symbols-outlined mr-2">space_dashboard</span>
                 <span className="font-medium">Dashboard</span>
@@ -63,7 +63,7 @@ export function AppSidebar() {
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
-            <SidebarMenuButton asChild isActive={pathname === "/dashboard/sets"} tooltip="Study Sets" className="h-11 rounded-xl data-[active=true]:bg-app-brand/10 data-[active=true]:text-app-brand hover:text-app-brand hover:bg-app-brand/5 transition-all">
+            <SidebarMenuButton asChild isActive={pathname === "/dashboard/sets"} tooltip="Study Sets" className="h-11 rounded-xl text-text-secondary data-[active=true]:bg-app-brand/10 data-[active=true]:text-app-brand hover:text-app-brand hover:bg-app-brand/5 transition-all">
               <Link href="/dashboard/sets" onClick={handleLinkClick}>
                 <span className="material-symbols-outlined mr-2">folder_copy</span>
                 <span className="font-medium">Study Sets</span>
@@ -71,7 +71,7 @@ export function AppSidebar() {
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
-            <SidebarMenuButton asChild isActive={pathname === "/dashboard/share"} tooltip="Share Notes & Papers" className="h-11 rounded-xl data-[active=true]:bg-app-brand/10 data-[active=true]:text-app-brand hover:text-app-brand hover:bg-app-brand/5 transition-all">
+            <SidebarMenuButton asChild isActive={pathname === "/dashboard/share"} tooltip="Share Notes & Papers" className="h-11 rounded-xl text-text-secondary data-[active=true]:bg-app-brand/10 data-[active=true]:text-app-brand hover:text-app-brand hover:bg-app-brand/5 transition-all">
               <Link href="/dashboard/share" onClick={handleLinkClick}>
                 <span className="material-symbols-outlined mr-2">share_reviews</span>
                 <span className="font-medium">Notes & Papers</span>
@@ -79,7 +79,7 @@ export function AppSidebar() {
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
-            <SidebarMenuButton asChild isActive={pathname === "/dashboard/billing"} tooltip="Billing" className="h-11 rounded-xl data-[active=true]:bg-app-brand/10 data-[active=true]:text-app-brand hover:text-app-brand hover:bg-app-brand/5 transition-all">
+            <SidebarMenuButton asChild isActive={pathname === "/dashboard/billing"} tooltip="Billing" className="h-11 rounded-xl text-text-secondary data-[active=true]:bg-app-brand/10 data-[active=true]:text-app-brand hover:text-app-brand hover:bg-app-brand/5 transition-all">
               <Link href="/dashboard/billing" onClick={handleLinkClick}>
                 <span className="material-symbols-outlined mr-2">payments</span>
                 <span className="font-medium">Billing & Credits</span>

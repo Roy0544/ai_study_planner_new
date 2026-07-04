@@ -65,7 +65,7 @@ export function StudySetCreator() {
       console.log("Study set created successfully:", response.data.title);
       setResult(response.data);
       window.dispatchEvent(new Event("credits-updated"));
-      router.push(`/dashboard/workspace?id=${response.data.id}`);
+      router.push(`/dashboard/workspace?id=${response.data.id}${response.setWasDeleted ? '&setWasDeleted=true' : ''}`);
     } catch (err) {
       console.error("Submission failed:", err);
       alert(`Error: ${err.message || "An unexpected error occurred. Please try again."}`);

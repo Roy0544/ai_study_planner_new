@@ -17,8 +17,10 @@
   --color-text-secondary: #94A3B8;
   --color-text-muted: #64748B;
 
-  --font-sans: "Inter", "sans-serif";
-  --font-inter: "Inter", "sans-serif";
+  --font-sans: "Inter", sans-serif;
+  --font-inter: "Inter", sans-serif;
+  --font-display: "Plus Jakarta Sans", sans-serif;
+  --font-mono: "Roboto Mono", monospace;
 
   --color-background: #0F172A;
   --color-on-background: #F8FAFC;
@@ -128,6 +130,10 @@ body {
   background-color: var(--color-background);
   color: var(--color-on-surface);
   font-family: var(--font-inter);
+}
+
+h1, h2, h3, h4, h5, h6, [data-display="true"] {
+  font-family: var(--font-display);
 }
 
 a {
@@ -364,4 +370,46 @@ button:not(:disabled):hover,
   html {
     @apply font-sans;
   }
+}
+
+@keyframes scan {
+  0%, 100% {
+    top: 0%;
+  }
+  50% {
+    top: 100%;
+  }
+}
+
+@keyframes loader {
+  0% {
+    width: 0%;
+  }
+  50% {
+    width: 70%;
+  }
+  100% {
+    width: 100%;
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.animate-scan {
+  animation: scan 3s linear infinite;
+}
+
+.animate-loader {
+  animation: loader 4s ease-in-out infinite;
+}
+
+.animate-shimmer {
+  animation: shimmer 2s linear infinite;
 }

@@ -5,8 +5,9 @@ import { motion, AnimatePresence } from "motion/react";
 import { StudySetCard } from "@/components/dashboard/study-set-card";
 import { Button } from "@/components/ui/button";
 import { HyperText } from "@/components/ui/hyper-text";
-import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 import Link from "next/link";
+import { Input } from "@/components/ui/input";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -75,8 +76,8 @@ export default function StudySetsClient({ initialSets }) {
               className="pl-9 bg-app-inset border border-app-border text-text-primary rounded-lg h-10 w-full"
             />
           </div>
-          <Button asChild className="rounded-lg font-bold h-10 bg-app-brand hover:bg-app-brand-hover text-white border-none shadow-sm shrink-0">
-            <Link href="/dashboard">
+          <Button asChild className="rounded-lg font-bold h-10 bg-app-brand hover:bg-app-brand-hover !text-white border-none shadow-sm shrink-0">
+            <Link href="/dashboard" className="text-white flex items-center">
               <span className="material-symbols-outlined mr-2 text-sm">add</span>
               Create New
             </Link>
@@ -93,14 +94,17 @@ export default function StudySetsClient({ initialSets }) {
             variants={containerVariants}
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch"
           >
-            {filteredSets.map((set) => (
+            {filteredSets.map((set, index) => (
               <motion.div 
                 key={set.id} 
                 layout
                 variants={itemVariants}
-                className="h-full"
+                className={cn(
+                  "h-full",
+                  index % 2 === 0 ? "lg:col-span-2 col-span-1" : "lg:col-span-1 col-span-1"
+                )}
               >
-                <StudySetCard set={set} />
+                <StudySetCard set={set} isLarge={index % 2 === 0} />
               </motion.div>
             ))}
           </motion.div>

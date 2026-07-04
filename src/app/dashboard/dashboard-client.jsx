@@ -74,7 +74,7 @@ export default function DashboardClient({ sets, credits, assetsGenerated, displa
                 <span className="material-symbols-outlined text-[12px] text-text-secondary/60">{stat.icon}</span>
                 <span className="text-[9px] font-bold text-text-secondary uppercase tracking-widest">{stat.label}</span>
               </div>
-              <span className="text-3xl font-extrabold text-text-primary tracking-tight">{stat.value}</span>
+              <span className="text-3xl font-extrabold text-text-primary tracking-tight font-mono">{stat.value}</span>
             </motion.div>
           ))}
         </div>

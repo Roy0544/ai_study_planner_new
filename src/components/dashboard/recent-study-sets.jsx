@@ -7,11 +7,11 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { fetchStudySets } from "@/actions/study-set";
 import { getCategoryIcon } from "@/lib/utils";
+import { StudySetMastery } from "@/components/dashboard/study-set-mastery";
 
 export async function RecentStudySets() {
   const result = await fetchStudySets();
@@ -48,12 +48,8 @@ export async function RecentStudySets() {
                   {new Date(set.created_at).toLocaleDateString()}
                 </CardDescription>
                 
-                <div className="mt-auto pt-6 space-y-2">
-                  <div className="flex items-center justify-between text-[11px] font-medium">
-                    <span className="text-text-secondary">Mastery</span>
-                    <span className="text-text-primary">0%</span>
-                  </div>
-                  <Progress value={0} className="h-1.5" />
+                <div className="mt-auto pt-6">
+                  <StudySetMastery studySet={set} />
                 </div>
 
                 <div className="mt-4 flex items-center gap-1 text-app-brand text-xs font-semibold opacity-0 group-hover:opacity-100 transition-opacity">

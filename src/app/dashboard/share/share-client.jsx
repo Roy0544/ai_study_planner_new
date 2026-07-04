@@ -402,6 +402,26 @@ export default function SharingHubPage() {
     e.preventDefault();
     if (downloadingDocs[doc.id] !== undefined) return;
 
+    let filePath = doc.file_path;
+    if (!filePath && doc.file_url) {
+      try {
+        const parts = doc.file_url.split('/storage/v1/object/public/');
+        if (parts.length > 1) {
+          const pathWithBucket = parts[1];
+          const pathParts = pathWithBucket.split('/');
+          pathParts.shift(); // remove bucket name
+          filePath = pathParts.join('/');
+        }
+      } catch (err) {
+        console.error("Failed to parse path from url:", err);
+      }
+    }
+
+    if (!filePath) {
+      triggerToast("No file path available for download", "error");
+      return;
+    }
+
     setDownloadingDocs((prev) => ({ ...prev, [doc.id]: 0 }));
     let progress = 0;
     const interval = setInterval(() => {
@@ -413,7 +433,7 @@ export default function SharingHubPage() {
       // Securely fetch file binary blob from Supabase storage bucket
       const { data, error } = await client.storage
         .from('notes-sharing-materials')
-        .download(doc.file_path);
+        .download(filePath);
 
       if (error) throw error;
 
@@ -678,7 +698,7 @@ export default function SharingHubPage() {
   // Sorting Logic
   const sortedDocuments = [...filteredDocuments].sort((a, b) => {
     if (sortBy === "recent") {
-      return new Date(b.createdAt) - new Date(a.createdAt);
+      return new Date(b.created_at) - new Date(a.created_at);
     }
     if (sortBy === "downloads") {
       return b.downloads - a.downloads;
@@ -831,7 +851,7 @@ export default function SharingHubPage() {
               { id: "papers", label: "Exam Papers", icon: "quiz" },
               { id: "requests", label: "Requests Board", icon: "forum" },
               { id: "my-uploads", label: "My Uploads", icon: "cloud_done" },
-              { id: "groups", label: "Collab Rooms", icon: "groups", comingSoon: true },
+            
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -1199,10 +1219,10 @@ export default function SharingHubPage() {
                   /* AI Synthesizer animation state */
                   <div className="flex-1 flex flex-col items-center justify-center text-center space-y-6 relative z-10">
                     <div className="relative">
-                      <div className="w-24 h-24 rounded-full border-2 border-primary/20 flex items-center justify-center animate-spin border-t-primary border-r-primary">
-                        <span className="material-symbols-outlined text-4xl text-[#8B5CF6] animate-pulse">auto_awesome</span>
+                      <div className="w-24 h-24 rounded-full border-2 border-orange-500/20 flex items-center justify-center animate-spin border-t-orange-500 border-r-orange-500">
+                        <span className="material-symbols-outlined text-4xl text-orange-400 animate-pulse">auto_awesome</span>
                       </div>
-                      <div className="absolute inset-0 w-24 h-24 rounded-full bg-secondary/5 blur-lg" />
+                      <div className="absolute inset-0 w-24 h-24 rounded-full bg-orange-500/5 blur-lg" />
                     </div>
                     <div className="space-y-2">
                       <h4 className="text-base font-bold text-foreground">AI Synthesis in Progress...</h4>
@@ -1210,7 +1230,7 @@ export default function SharingHubPage() {
                     </div>
                     <div className="w-48 bg-muted/40 h-1.5 rounded-full overflow-hidden border border-muted-foreground/5">
                       <div 
-                        className="bg-gradient-to-r from-primary to-secondary h-full transition-all duration-150"
+                        className="bg-gradient-to-r from-orange-500 to-amber-500 h-full transition-all duration-150"
                         style={{ width: `${aiScannerState.progress}%` }}
                       />
                     </div>

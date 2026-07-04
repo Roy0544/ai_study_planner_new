@@ -36,10 +36,10 @@ export const handleEmailLogin = async (email, password) => {
             password,
         });
         if (error) throw error;
-        return { data, error: null };
+        return { success: true, data, error: null };
     } catch (error) {
         console.error('Error during email login:', error.message);
-        return { data: null, error };
+        return { success: false, data: null, error: error.message || "Authentication failed." };
     }
 }
 
@@ -53,10 +53,10 @@ export const handleEmailSignUp = async (email, password) => {
             },
         });
         if (error) throw error;
-        return { data, error: null };
+        return { success: true, data, error: null };
     } catch (error) {
         console.error('Error during email signup:', error.message);
-        return { data: null, error };
+        return { success: false, data: null, error: error.message || "Registration failed." };
     }
 }
 

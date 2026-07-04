@@ -26,8 +26,9 @@ import { getCategoryIcon, cn } from "@/lib/utils";
 import { Loader2 } from "lucide-react";
 import { MarkdownRenderer } from "@/components/ui/markdown-renderer";
 import { Suspense } from "react";
-import { InsufficientCreditsModal } from "@/components/dashboard/insufficient-credits-modal";
 import { CREDIT_COSTS } from "@/lib/credits";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { motion, AnimatePresence } from "motion/react";
 
 export function WorkspaceContent() {
   const searchParams = useSearchParams();
@@ -56,6 +57,17 @@ export function WorkspaceContent() {
   const [showQuizResult, setShowQuizResult] = useState(false);
   const [learningNotes, setLearningNotes] = useState({});
   const [currentQuizResultPage, setCurrentQuizResultPage] = useState(0);
+  const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
+  const [isLimitNoticeOpen, setIsLimitNoticeOpen] = useState(false);
+
+  useEffect(() => {
+    if (searchParams.get("setWasDeleted") === "true") {
+      setIsLimitNoticeOpen(true);
+      // Clean up the URL search parameter immediately so page refresh doesn't trigger it again
+      const newUrl = window.location.pathname + `?id=${setId}`;
+      window.history.replaceState({ path: newUrl }, '', newUrl);
+    }
+  }, [searchParams, setId]);
 
   const sanitizedSummary = useMemo(() => {
     if (!studySet?.summary) return "";
@@ -848,8 +860,43 @@ export function WorkspaceContent() {
           
           {/* Left Panel: Content / Materials (8 cols) */}
           <div className="lg:col-span-8 flex flex-col gap-6 min-h-0">
-            <LiquidGlassCard glassSize="none" className="flex-1 bg-transparent border-muted/50 rounded-2xl overflow-hidden flex flex-col p-4">
+            <LiquidGlassCard glassSize="none" className="flex-1 bg-transparent border-muted/50 rounded-2xl overflow-hidden flex flex-col p-4 relative">
               <SmoothTab items={workspaceTabs} defaultTabId="notes" className="w-full h-full" />
+              
+              <AnimatePresence>
+                {generating && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="absolute inset-0 bg-app-bg/90 backdrop-blur-md flex flex-col items-center justify-center z-50 p-8 text-center space-y-6"
+                  >
+                    <div className="relative w-44 h-44 rounded-2xl border border-app-brand/20 bg-app-inset/60 overflow-hidden flex flex-col items-center justify-center p-6 shadow-2xl">
+                      <div className="absolute inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-app-brand to-transparent top-0 animate-scan pointer-events-none shadow-[0_0_8px_rgba(96,165,250,0.8)]" />
+                      <div className="absolute inset-0 bg-gradient-to-b from-app-brand/5 via-transparent to-transparent opacity-20 pointer-events-none" />
+
+                      <div className="relative w-16 h-16 rounded-full bg-app-brand/10 flex items-center justify-center text-app-brand animate-pulse border border-app-brand/20">
+                        <span className="material-symbols-outlined text-3xl animate-bounce">
+                          {generating === 'flashcards' ? 'style' : generating === 'quiz' ? 'quiz' : 'account_tree'}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2 max-w-sm">
+                      <h3 className="text-base font-bold text-text-primary uppercase tracking-wider animate-pulse">
+                        Synthesizing Study Suite
+                      </h3>
+                      <p className="text-xs text-text-secondary leading-relaxed">
+                        GKVK AI Engine is reading your source document, extracting core concepts, and generating practice materials...
+                      </p>
+                    </div>
+
+                    <div className="w-40 h-1 bg-app-border rounded-full overflow-hidden">
+                      <div className="h-full bg-app-brand rounded-full animate-loader" />
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </LiquidGlassCard>
           </div>
 
@@ -860,18 +907,18 @@ export function WorkspaceContent() {
                 <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground mb-4">Study Overview</h3>
                 <div className="space-y-6">
                   {/* Overall Mastery Card */}
-                  <div className="p-6 rounded-2xl bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border border-primary/20 flex flex-col items-center justify-center space-y-3 relative overflow-hidden">
-                     <div className="absolute -top-10 -right-10 w-32 h-32 bg-primary/20 blur-3xl rounded-full" />
-                     <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-secondary/20 blur-3xl rounded-full" />
+                  <div className="p-6 rounded-2xl bg-gradient-to-br from-emerald-500/10 via-emerald-500/5 to-transparent border border-emerald-500/20 flex flex-col items-center justify-center space-y-3 relative overflow-hidden">
+                     <div className="absolute -top-10 -right-10 w-32 h-32 bg-emerald-500/20 blur-3xl rounded-full" />
+                     <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-emerald-500/10 blur-3xl rounded-full" />
                      
-                     <span className="text-xs font-bold text-primary uppercase tracking-widest z-10">Overall Mastery</span>
+                     <span className="text-xs font-bold text-emerald-400 uppercase tracking-widest z-10">Overall Mastery</span>
                      <div className="flex items-baseline gap-1 z-10">
                         <span className="text-5xl font-black text-foreground tracking-tighter">{overallMastery}</span>
                         <span className="text-xl font-bold text-muted-foreground">%</span>
                      </div>
                      <Progress 
                         value={overallMastery} 
-                        className="h-2 w-full mt-4 bg-primary/20 z-10" 
+                        className="h-2 w-full mt-4 bg-emerald-500/20 z-10" 
                         indicatorClassName={
                           overallMastery <= 20 
                             ? "bg-red-500" 
@@ -937,17 +984,7 @@ export function WorkspaceContent() {
                    <Button 
                       variant="outline" 
                       className="w-full justify-start h-11 rounded-xl border-muted-foreground/20 hover:bg-muted/50 hover:text-red-500 transition-colors"
-                      onClick={() => {
-                        if (confirm("Are you sure you want to reset all progress for this study set?")) {
-                          setCurrentQuizIndex(0);
-                          setQuizAnswers({});
-                          setShowQuizResult(false);
-                          setCheckedSections([]);
-                          setMindmapsViewed(false);
-                          setFlashcardsFlipped([]);
-                          localStorage.removeItem(`masteryState-${setId}`);
-                        }
-                      }}
+                      onClick={() => setIsResetConfirmOpen(true)}
                    >
                      <span className="material-symbols-outlined mr-2 text-[18px]">restart_alt</span>
                      Reset Progress
@@ -965,6 +1002,66 @@ export function WorkspaceContent() {
         requiredCredits={creditsModal.required}
         actionName={creditsModal.action}
       />
+
+      <Dialog open={isResetConfirmOpen} onOpenChange={setIsResetConfirmOpen}>
+        <DialogContent className="!w-[90vw] md:!w-[480px] !max-w-none border border-app-border bg-app-card text-text-primary rounded-xl p-6 shadow-xl">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-bold flex items-center gap-2 text-red-400">
+              <span className="material-symbols-outlined text-[20px]">warning</span>
+              Reset Study Progress?
+            </DialogTitle>
+            <DialogDescription className="text-text-secondary text-xs leading-relaxed mt-2">
+              This will permanently delete all checked notes, active quiz answers, and study flashcards progress for this study set. This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-6 flex justify-end gap-3">
+            <Button
+              variant="outline"
+              onClick={() => setIsResetConfirmOpen(false)}
+              className="rounded-lg border-app-border text-text-secondary hover:bg-white/5 text-xs h-9"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                setCurrentQuizIndex(0);
+                setQuizAnswers({});
+                setShowQuizResult(false);
+                setCheckedSections([]);
+                setMindmapsViewed(false);
+                setFlashcardsFlipped([]);
+                localStorage.removeItem(`masteryState-${setId}`);
+                setIsResetConfirmOpen(false);
+              }}
+              className="rounded-lg bg-red-600 hover:bg-red-700 text-white border-none shadow-md font-bold text-xs h-9"
+            >
+              Reset Progress
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isLimitNoticeOpen} onOpenChange={setIsLimitNoticeOpen}>
+        <DialogContent className="!w-[90vw] md:!w-[440px] !max-w-none border border-app-border bg-app-card text-text-primary rounded-xl p-6 shadow-xl">
+          <DialogHeader className="flex flex-col items-center text-center space-y-3 pt-2">
+            <div className="w-12 h-12 rounded-full bg-orange-500/10 flex items-center justify-center text-orange-500 animate-pulse">
+              <span className="material-symbols-outlined text-2xl font-bold">info</span>
+            </div>
+            <DialogTitle className="text-lg font-bold text-text-primary">Performance Auto-Cleanup</DialogTitle>
+            <DialogDescription className="text-text-secondary text-xs leading-relaxed max-w-sm">
+              Because your total study sets exceeded the maximum limit of **10 sets**, your oldest study set (including its uploaded documents) has been automatically deleted to maintain workspace performance.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-6 flex justify-center">
+            <Button
+              onClick={() => setIsLimitNoticeOpen(false)}
+              className="w-full bg-orange-500 hover:bg-orange-600 text-white border-none shadow-md font-bold text-xs h-9"
+            >
+              Acknowledge
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </main>
   );
 }

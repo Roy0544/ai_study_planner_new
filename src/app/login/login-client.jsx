@@ -2,11 +2,9 @@
 
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import Image from "next/image";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { FlickeringGrid } from "@/components/ui/flickering-grid";
-import { Globe } from "@/components/ui/globe";
 import { handleGoogleLogin, handleEmailLogin } from "@/config/client";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -21,6 +19,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { useState } from "react";
+import { cn } from "@/lib/utils";
 
 const formSchema = z.object({
   email: z.string().email({ message: "Invalid email address" }),
@@ -53,16 +52,17 @@ export default function LoginClient() {
   };
 
   return (
-    <div className="flex min-h-screen bg-app-bg text-text-primary">
-      {/* Left Side: Dynamic Visual Banner */}
+    <div className="flex min-h-screen bg-app-bg text-text-primary select-none">
+      
+      {/* Left Side: Dynamic Visual Banner (desktop only) */}
       <div className="hidden lg:flex lg:w-[55%] flex-col justify-between p-12 bg-app-inset border-r border-app-border relative overflow-hidden">
         {/* Background Grid Accent */}
-        <div className="absolute inset-0 z-0 opacity-40">
+        <div className="absolute inset-0 z-0 opacity-20">
           <FlickeringGrid
             className="w-full h-full"
             squareSize={4}
             gridGap={6}
-            color="#6366F1"
+            color="#60A5FA"
             maxOpacity={0.15}
             flickerChance={1}
             height={1000}
@@ -72,47 +72,41 @@ export default function LoginClient() {
 
         {/* Brand Header */}
         <div className="relative z-10">
-          <Link href="/" className="flex items-center gap-3 group w-fit">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl overflow-hidden shadow-sm border border-app-border group-hover:scale-105 transition-transform">
-              <Image
-                src="/logo.jpg"
-                alt="GKVK AI Logo"
-                width={40}
-                height={40}
-                priority
-                className="h-full w-full object-cover"
-              />
-            </div>
-            <div className="flex flex-col">
-              <span className="text-lg font-bold leading-none tracking-tight">GKVK_AI</span>
-              <span className="text-[10px] text-text-muted mt-1.5 font-medium tracking-wider uppercase">v1.0.4 Beta</span>
-            </div>
+          <Link 
+            href="/" 
+            className="text-xl font-black text-text-primary tracking-tighter flex items-center gap-1.5 hover:opacity-95 transition-opacity"
+            data-display="true"
+          >
+            <span className="w-5 h-5 rounded bg-app-brand flex items-center justify-center text-app-inset text-xs font-black">g</span>
+            <span>gkvk<span className="text-app-brand">.ai</span></span>
           </Link>
         </div>
 
+        {/* Dynamic Center Quote Container */}
         <div className="relative z-10 w-full">
-          <div className="bg-app-card border border-app-border p-10 rounded-xl shadow-sm space-y-6">
+          <div className="bg-app-card border border-app-border p-10 rounded-2xl shadow-xl space-y-6 relative overflow-hidden">
+            <div className="absolute -inset-1 bg-gradient-to-br from-app-brand/5 via-transparent to-transparent opacity-40 pointer-events-none" />
             <div className="flex gap-1">
               {[1, 2, 3, 4, 5].map((i) => (
-                <span key={i} className="material-symbols-outlined text-app-brand text-sm fill-current">star</span>
+                <span key={i} className="material-symbols-outlined text-app-brand text-xs fill-current">star</span>
               ))}
             </div>
-            <h1 className="text-3xl md:text-4xl font-semibold text-text-primary leading-[1.3] tracking-tight">
+            <h1 className="text-2xl md:text-3xl font-black text-text-primary leading-[1.3] tracking-tight" data-display="true">
               &quot;The beautiful thing about learning is that no one can take it away from you.&quot;
             </h1>
-            <div className="flex items-center gap-4 pt-2">
-              <div className="w-10 h-10 rounded-full bg-app-inset border border-app-border flex items-center justify-center text-text-primary font-bold text-xs">
+            <div className="flex items-center gap-3 pt-2">
+              <div className="w-9 h-9 rounded-full bg-app-inset border border-app-border flex items-center justify-center text-app-brand font-black text-[10px] tracking-widest">
                 BB
               </div>
               <div>
-                <p className="text-text-primary font-medium">B.B. King</p>
-                <p className="text-text-muted text-sm">Legendary Musician</p>
+                <p className="text-xs font-bold text-text-primary">B.B. King</p>
+                <p className="text-[10px] text-text-muted font-mono uppercase tracking-wider">Legendary Musician</p>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="relative z-10 flex gap-8 text-sm font-medium text-text-muted">
+        <div className="relative z-10 flex gap-6 text-[10px] font-bold text-text-muted uppercase tracking-wider">
           <Link href="#" className="hover:text-text-primary transition-colors">Help Center</Link>
           <Link href="#" className="hover:text-text-primary transition-colors">Privacy Policy</Link>
           <Link href="#" className="hover:text-text-primary transition-colors">Terms of Service</Link>
@@ -121,28 +115,37 @@ export default function LoginClient() {
 
       {/* Right Side: Auth Form */}
       <div className="w-full lg:w-[45%] flex flex-col justify-center items-center p-6 sm:p-12 bg-app-bg relative overflow-hidden">
-        {/* Mobile Logo */}
-        <div className="lg:hidden absolute top-8 flex items-center gap-2">
-           <span className="material-symbols-outlined text-app-brand text-3xl font-bold">auto_awesome</span>
-           <span className="text-2xl font-bold tracking-tight text-text-primary">StudyAI</span>
+        
+        {/* Mobile Header Logo */}
+        <div className="lg:hidden absolute top-8 flex items-center gap-1.5">
+          <Link 
+            href="/" 
+            className="text-lg font-black text-text-primary tracking-tighter flex items-center gap-1.5"
+            data-display="true"
+          >
+            <span className="w-5 h-5 rounded bg-app-brand flex items-center justify-center text-app-inset text-xs font-black">g</span>
+            <span>gkvk<span className="text-app-brand">.ai</span></span>
+          </Link>
         </div>
 
-        <div className="w-full max-w-[450px] relative">
-          <div className="relative bg-app-card border border-app-border rounded-xl p-8 sm:p-10 shadow-sm overflow-hidden">
-            <div className="space-y-8 relative z-10">
-              <div className="text-center lg:text-left space-y-2">
-                <h2 className="text-3xl font-bold tracking-tight text-text-primary">Welcome Back</h2>
-                <p className="text-text-secondary text-sm">Sign in to continue your learning journey.</p>
+        <div className="w-full max-w-[420px] relative">
+          <div className="relative bg-app-card border border-app-border rounded-2xl p-8 sm:p-10 shadow-xl overflow-hidden">
+            <div className="absolute -inset-1 bg-gradient-to-br from-app-brand/5 via-transparent to-transparent opacity-20 pointer-events-none" />
+            
+            <div className="space-y-6 relative z-10">
+              <div className="text-center lg:text-left space-y-1">
+                <h2 className="text-2xl font-black tracking-tight text-text-primary" data-display="true">Welcome Back</h2>
+                <p className="text-text-secondary text-xs">Sign in to continue your learning journey.</p>
               </div>
 
-              <div className="space-y-6">
+              <div className="space-y-4">
                 <Button 
                   onClick={handleGoogleLogin} 
                   variant="outline" 
                   disabled={isLoading}
-                  className="w-full h-12 gap-3 font-medium border-app-border hover:bg-white/5 transition-all rounded-lg text-text-primary"
+                  className="w-full h-11 gap-2.5 font-bold border-app-border hover:bg-white/5 transition-all rounded-xl text-text-primary text-xs"
                 >
-                  <svg className="w-5 h-5" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4" viewBox="0 0 24 24">
                     <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"></path>
                     <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"></path>
                     <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"></path>
@@ -151,28 +154,29 @@ export default function LoginClient() {
                   Continue with Google
                 </Button>
 
-                <div className="relative">
+                <div className="relative py-2">
                   <div className="absolute inset-0 flex items-center">
-                    <Separator className="w-full opacity-50 bg-app-border" />
+                    <Separator className="w-full opacity-40 bg-app-border" />
                   </div>
-                  <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-app-card px-4 text-text-muted font-semibold tracking-widest">or</span>
+                  <div className="relative flex justify-center text-[10px] uppercase font-bold tracking-widest text-text-muted">
+                    <span className="bg-app-card px-3">or</span>
                   </div>
                 </div>
 
                 <Form {...form}>
                   <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                     {error && (
-                      <div className="bg-destructive/10 border border-destructive/20 text-destructive text-xs font-medium p-3 rounded-lg animate-in fade-in slide-in-from-top-1">
+                      <div className="bg-destructive/10 border border-destructive/20 text-destructive text-[11px] font-bold p-3 rounded-xl animate-in fade-in slide-in-from-top-1">
                         {error}
                       </div>
                     )}
+                    
                     <FormField
                       control={form.control}
                       name="email"
                       render={({ field }) => (
-                        <FormItem className="space-y-2">
-                          <FormLabel className="text-sm font-semibold ml-1 text-text-primary">Email address</FormLabel>
+                        <FormItem className="space-y-1.5">
+                          <FormLabel className="text-xs font-bold text-text-primary uppercase tracking-wider ml-0.5">Email Address</FormLabel>
                           <FormControl>
                             <div className="relative">
                               <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-text-muted text-lg">
@@ -180,12 +184,12 @@ export default function LoginClient() {
                               </span>
                               <Input
                                 placeholder="name@example.com"
-                                className="pl-12 h-12 bg-app-inset border border-app-border focus-visible:ring-app-brand text-text-primary rounded-lg"
+                                className="pl-12 h-11 bg-app-inset border border-app-border focus-visible:ring-app-brand text-text-primary rounded-xl text-xs"
                                 {...field}
                               />
                             </div>
                           </FormControl>
-                          <FormMessage />
+                          <FormMessage className="text-[10px] font-bold text-red-400 mt-1" />
                         </FormItem>
                       )}
                     />
@@ -194,14 +198,14 @@ export default function LoginClient() {
                       control={form.control}
                       name="password"
                       render={({ field }) => (
-                        <FormItem className="space-y-2">
-                          <div className="flex justify-between items-center ml-1">
-                            <FormLabel className="text-sm font-semibold text-text-primary">Password</FormLabel>
+                        <FormItem className="space-y-1.5">
+                          <div className="flex justify-between items-center ml-0.5">
+                            <FormLabel className="text-xs font-bold text-text-primary uppercase tracking-wider">Password</FormLabel>
                             <Link
                               href="#"
-                              className="text-xs font-bold text-app-brand hover:underline underline-offset-4"
+                              className="text-[10px] font-bold text-app-brand hover:underline underline-offset-4"
                             >
-                              Forgot password?
+                              Forgot?
                             </Link>
                           </div>
                           <FormControl>
@@ -212,12 +216,12 @@ export default function LoginClient() {
                               <Input
                                 type="password"
                                 placeholder="••••••••"
-                                className="pl-12 h-12 bg-app-inset border border-app-border focus-visible:ring-app-brand text-text-primary rounded-lg"
+                                className="pl-12 h-11 bg-app-inset border border-app-border focus-visible:ring-app-brand text-text-primary rounded-xl text-xs"
                                 {...field}
                               />
                             </div>
                           </FormControl>
-                          <FormMessage />
+                          <FormMessage className="text-[10px] font-bold text-red-400 mt-1" />
                         </FormItem>
                       )}
                     />
@@ -225,7 +229,7 @@ export default function LoginClient() {
                     <Button 
                       type="submit" 
                       disabled={isLoading}
-                      className="w-full h-12 font-bold bg-app-brand hover:bg-app-brand-hover text-white rounded-lg mt-2 shadow-sm border-none cursor-pointer"
+                      className="w-full h-11 font-bold bg-app-brand hover:bg-app-brand-hover text-app-inset rounded-xl mt-3 shadow-md border-none cursor-pointer text-xs"
                     >
                       {isLoading ? "Signing In..." : "Sign In"}
                     </Button>
@@ -233,13 +237,15 @@ export default function LoginClient() {
                 </Form>
               </div>
 
-              <p className="text-center text-sm text-text-muted pt-2">
+              <p className="text-center text-xs text-text-muted pt-2">
                 Don&apos;t have an account?{" "}
                 <Link href="/signup" className="font-bold text-app-brand hover:underline underline-offset-4">Sign up for free</Link>
               </p>
             </div>
+
           </div>
         </div>
+
       </div>
     </div>
   );

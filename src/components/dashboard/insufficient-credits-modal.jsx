@@ -40,7 +40,7 @@ export function InsufficientCreditsModal({ isOpen, onClose, requiredCredits, cur
           </div>
           <div className="flex justify-between items-center text-muted-foreground">
             <span>Required credits:</span>
-            <span className="font-extrabold text-primary">{requiredCredits} credits</span>
+            <span className="font-extrabold text-orange-400">{requiredCredits} credits</span>
           </div>
           {currentCredits !== undefined && (
             <div className="flex justify-between items-center text-muted-foreground pt-1.5 border-t border-muted-foreground/5">
@@ -54,13 +54,13 @@ export function InsufficientCreditsModal({ isOpen, onClose, requiredCredits, cur
           <Button
             variant="ghost"
             onClick={onClose}
-            className="w-full sm:w-auto font-semibold rounded-lg text-xs"
+            className="w-full sm:w-auto font-semibold rounded-lg text-xs border border-app-border hover:bg-white/5"
           >
             Cancel
           </Button>
           <Button
             onClick={handleRedirect}
-            className="w-full sm:w-auto font-bold rounded-lg text-xs bg-primary text-primary-foreground hover:bg-primary/95 shadow-lg shadow-primary/20"
+            className="w-full sm:w-auto font-bold rounded-lg text-xs bg-orange-500 hover:bg-orange-600 text-white border-none shadow-lg shadow-orange-500/20"
           >
             <span className="material-symbols-outlined text-[14px] mr-1.5">payments</span>
             Buy Credits

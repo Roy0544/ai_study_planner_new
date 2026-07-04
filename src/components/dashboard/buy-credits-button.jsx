@@ -100,10 +100,10 @@ export function BuyCreditsButton({ currentCredits = 0, onSuccess, isLow = false 
         <Button
           size="sm"
           className={cn(
-            "w-full h-8 text-[11px] font-bold rounded-lg shadow-sm transition-all",
+            "w-full h-8 text-[11px] font-bold rounded-lg shadow-sm transition-all border-none text-white",
             isLow 
-              ? "bg-amber-500 hover:bg-amber-600 text-white animate-pulse shadow-md shadow-amber-500/20"
-              : "bg-primary text-primary-foreground"
+              ? "bg-amber-500 hover:bg-amber-600 animate-pulse shadow-md shadow-amber-500/20"
+              : "bg-orange-500 hover:bg-orange-600 shadow-md shadow-orange-500/20"
           )}
         >
           <span className="material-symbols-outlined text-[14px] mr-1">
@@ -113,10 +113,10 @@ export function BuyCreditsButton({ currentCredits = 0, onSuccess, isLow = false 
         </Button>
       </DialogTrigger>
 
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md border border-app-border bg-app-card text-text-primary rounded-xl shadow-xl">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-primary">
+          <DialogTitle className="flex items-center gap-2 text-text-primary">
+            <span className="material-symbols-outlined text-orange-500">
               payments
             </span>
             Buy Study Credits
@@ -124,12 +124,12 @@ export function BuyCreditsButton({ currentCredits = 0, onSuccess, isLow = false 
         </DialogHeader>
 
         {/* Current balance indicator */}
-        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-primary/5 border border-primary/20 text-sm">
-          <span className="material-symbols-outlined text-primary text-base">
+        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-orange-500/5 border border-orange-500/20 text-sm">
+          <span className="material-symbols-outlined text-orange-400 text-base">
             toll
           </span>
           <span className="text-muted-foreground">Current balance:</span>
-          <span className="font-bold text-primary">{currentCredits} credits</span>
+          <span className="font-bold text-orange-400">{currentCredits} credits</span>
         </div>
 
         {/* Credit packages */}
@@ -140,7 +140,7 @@ export function BuyCreditsButton({ currentCredits = 0, onSuccess, isLow = false 
               className={cn(
                 "flex items-center justify-between p-4 rounded-xl border transition-all",
                 pkg.id === "popular"
-                  ? "border-primary/50 bg-primary/5"
+                  ? "border-orange-500/30 bg-orange-500/5"
                   : "border-muted-foreground/10 bg-muted/20"
               )}
             >
@@ -148,7 +148,7 @@ export function BuyCreditsButton({ currentCredits = 0, onSuccess, isLow = false 
                 <div className="flex items-center gap-2">
                   <span className="font-bold text-sm">{pkg.label}</span>
                   {pkg.id === "popular" && (
-                    <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded bg-primary text-primary-foreground">
+                    <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded bg-orange-500 text-white">
                       Best Value
                     </span>
                   )}
@@ -161,7 +161,12 @@ export function BuyCreditsButton({ currentCredits = 0, onSuccess, isLow = false 
               <Button
                 size="sm"
                 variant={pkg.id === "popular" ? "default" : "outline"}
-                className="text-xs font-bold rounded-lg min-w-[80px]"
+                className={cn(
+                  "text-xs font-bold rounded-lg min-w-[80px]",
+                  pkg.id === "popular"
+                    ? "bg-orange-500 hover:bg-orange-600 text-white border-none shadow-sm"
+                    : "border-app-border text-text-secondary hover:bg-white/5"
+                )}
                 disabled={loading === pkg.id}
                 onClick={() => handlePurchase(pkg)}
               >

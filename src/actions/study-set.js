@@ -2,6 +2,7 @@
 import { GoogleGenerativeAI } from "@google/generative-ai"
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { revalidatePath } from "next/cache";
 import { parseOffice } from "officeparser";
 import { deductCredits, refundCredits } from "./billing";
 import { checkRateLimit } from "../lib/rate-limiter";
@@ -309,9 +310,33 @@ export async function createFullStudySet(formData) {
     }
 
     console.log("Successfully created study set and linked to material.");
-    return { success: true, id: studySet.id, data: studySet };
 
-    } catch (error) {
+    // Limit Check: Automatically clean up oldest study sets if total count > 10
+    let setWasDeleted = false;
+    try {
+      const { data: userSets, error: countError } = await supabase
+        .from('study_sets')
+        .select('id, material_id')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: true });
+
+      if (!countError && userSets && userSets.length > 10) {
+        console.log(`User has ${userSets.length} study sets. Cleaning up oldest to stay under 10 limit...`);
+        const setsToDelete = userSets.slice(0, userSets.length - 10);
+        setWasDeleted = true;
+        for (const setToDelete of setsToDelete) {
+          await deleteStudySetInternal(supabase, setToDelete.id, user.id);
+        }
+      }
+    } catch (cleanupError) {
+      console.error("Cleanup of oldest sets failed:", cleanupError);
+    }
+
+    revalidatePath("/dashboard");
+    revalidatePath("/dashboard/sets");
+    return { success: true, id: studySet.id, data: studySet, setWasDeleted };
+
+  } catch (error) {
     console.error("Creation failed:", error.message);
     // Refund credits
     await refundCredits("study_set");
@@ -330,7 +355,7 @@ export async function fetchStudySets() {
 
     const { data, error } = await supabase
       .from('study_sets')
-      .select('*')
+      .select('*, flashcards(cards), quizzes(payload), flowcharts(id)')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false });
 
@@ -526,6 +551,8 @@ export async function generateMindMap(setId, content, fileUrl) {
       await refundCredits("mindmap");
       throw dbResult.error;
     }
+    revalidatePath("/dashboard/sets");
+    revalidatePath("/dashboard/workspace");
     return { success: true, data: mermaidCode };
   } catch (error) {
     console.error("Mindmap generation failed:", error);
@@ -627,6 +654,8 @@ export async function generateFlashcards(setId, content, fileUrl) {
       await supabase.from('flashcards').insert({ study_set_id: setId, cards: flashcards });
     }
 
+    revalidatePath("/dashboard/sets");
+    revalidatePath("/dashboard/workspace");
     return { success: true, data: flashcards };
   } catch (error) {
     console.error("Flashcard generation failed:", error);
@@ -730,6 +759,8 @@ export async function generateQuiz(setId, content, fileUrl) {
       await supabase.from('quizzes').insert({ study_set_id: setId, payload: quiz });
     }
 
+    revalidatePath("/dashboard/sets");
+    revalidatePath("/dashboard/workspace");
     return { success: true, data: quiz };
   } catch (error) {
     console.error("Quiz generation failed:", error);
@@ -738,19 +769,88 @@ export async function generateQuiz(setId, content, fileUrl) {
   }
 }
 
+function getStoragePathFromUrl(url, bucketName = 'study-materials') {
+  if (!url) return null;
+  const matchStr = `/storage/v1/object/public/${bucketName}/`;
+  const index = url.indexOf(matchStr);
+  if (index !== -1) {
+    return url.substring(index + matchStr.length);
+  }
+  return null;
+}
+
+async function deleteStudySetInternal(supabase, id, userId) {
+  try {
+    // 1. Fetch study set details
+    const { data: set, error: fetchError } = await supabase
+      .from('study_sets')
+      .select('id, material_id')
+      .eq('id', id)
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (fetchError || !set) {
+      console.log("Study set not found or already deleted:", id);
+      return;
+    }
+
+    // 2. Fetch material file_url separately to be 100% safe
+    let fileUrl = null;
+    if (set.material_id) {
+      const { data: material } = await supabase
+        .from('materials')
+        .select('file_url')
+        .eq('id', set.material_id)
+        .eq('user_id', userId)
+        .maybeSingle();
+      if (material) {
+        fileUrl = material.file_url;
+      }
+    }
+
+    // 3. Delete study set row (this will cascade delete associated items)
+    await supabase
+      .from('study_sets')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', userId);
+
+    // 4. Delete file from storage and materials table
+    if (set.material_id) {
+      if (fileUrl) {
+        const storagePath = getStoragePathFromUrl(fileUrl, 'study-materials');
+        if (storagePath) {
+          console.log("Removing file from storage bucket:", storagePath);
+          await supabase.storage.from('study-materials').remove([storagePath]);
+        }
+      }
+      
+      // Delete material record
+      await supabase
+        .from('materials')
+        .delete()
+        .eq('id', set.material_id)
+        .eq('user_id', userId);
+    }
+  } catch (error) {
+    console.error("Error in deleteStudySetInternal:", error);
+  }
+}
+
 export async function deleteStudySet(id) {
-    try {
+  try {
     const supabase = await getSupabaseServerClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
     if (authError || !user) throw new Error("Authentication required");
 
-    const { error } = await supabase.from('study_sets').delete().eq('id', id).eq('user_id', user.id);
-    if (error) throw error;
+    await deleteStudySetInternal(supabase, id, user.id);
+    revalidatePath("/dashboard");
+    revalidatePath("/dashboard/sets");
     return { success: true };
-    } catch (error) {
+  } catch (error) {
     return { success: false, error: error.message };
-    }
+  }
 }
 
 export async function generateQuickNote(question, correctAnswer, content) {

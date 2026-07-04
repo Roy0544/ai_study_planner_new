@@ -357,13 +357,13 @@ export default function BillingPage() {
                     {pkg.label}
                   </CardDescription>
                   <CardTitle className="text-2xl font-extrabold text-foreground">
-                    {pkg.credits} Credits
+                    <span className="font-mono">{pkg.credits}</span> Credits
                   </CardTitle>
                 </CardHeader>
 
                 <CardContent className="space-y-4 flex-1">
                   <div className="flex items-baseline gap-1">
-                    <span className="text-3xl font-extrabold text-foreground">₹{pkg.priceINR}</span>
+                    <span className="text-3xl font-extrabold text-foreground font-mono">₹{pkg.priceINR}</span>
                     <span className="text-xs text-muted-foreground">one-time</span>
                   </div>
 

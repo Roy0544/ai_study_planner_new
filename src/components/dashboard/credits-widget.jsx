@@ -68,7 +68,7 @@ export function CreditsWidget() {
           </span>
         </Link>
         <div className="flex items-center gap-1">
-          <span className="material-symbols-outlined text-app-brand text-[14px]">toll</span>
+          <span className="material-symbols-outlined text-orange-400 text-[14px]">toll</span>
           <span className="text-[10px] font-bold text-text-primary">
             {loading ? "..." : `${credits ?? 0} left`}
           </span>
@@ -80,7 +80,7 @@ export function CreditsWidget() {
         <div
           className={cn(
             "h-full rounded-full transition-all duration-500",
-            isLow ? "bg-amber-500" : "bg-app-brand"
+            isLow ? "bg-amber-500" : "bg-orange-500"
           )}
           style={{ width: `${Math.min(((credits ?? 0) / 100) * 100, 100)}%` }}
         />
@@ -90,13 +90,13 @@ export function CreditsWidget() {
         size="sm"
         asChild
         className={cn(
-          "w-full h-8 text-[11px] font-bold rounded-lg transition-all border-none",
+          "w-full h-8 text-[11px] font-bold rounded-lg transition-all border-none !text-white",
           isLow 
-            ? "bg-amber-500 hover:bg-amber-600 text-white"
-            : "bg-app-brand hover:bg-app-brand-hover text-white"
+            ? "bg-amber-500 hover:bg-amber-600 animate-pulse"
+            : "bg-orange-500 hover:bg-orange-600 shadow-sm shadow-orange-500/20"
         )}
       >
-        <Link href="/dashboard/billing">
+        <Link href="/dashboard/billing" className="text-white flex items-center justify-center">
           <span className="material-symbols-outlined text-[14px] mr-1">
             add_circle
           </span>
