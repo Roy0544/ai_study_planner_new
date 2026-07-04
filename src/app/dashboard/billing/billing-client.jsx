@@ -6,11 +6,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { BorderBeam } from "@/components/ui/border-beam";
-import { HyperText } from "@/components/ui/hyper-text";
+import { NoiseTexture } from "@/components/ui/noise-texture";
+import { Input } from "@/components/ui/input";
+import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { CREDIT_PACKAGES, CREDIT_COSTS } from "@/lib/credits";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { createCreditsOrder, verifyCreditsPayment, getUserCredits, getUserTransactions, redeemVoucher } from "@/actions/billing";
+import Link from "next/link";
 
 function loadRazorpayScript() {                                                                                                                  
   return new Promise((resolve) => {                                                                                                              
@@ -150,26 +153,30 @@ export default function BillingPage() {
             if (txRes.success) {
               setTransactions(txRes.data || []);
             }
-            setTimeout(() => setSuccessPack(null), 3000);
           } else {                                                                                                                                 
             alert("Payment verification failed: " + verifyRes.error);                                                                              
           }                                                                                                                                        
           setLoadingPack(null);                                                                                                                    
         },                                                                                                                                         
-        modal: {
-          ondismiss: () => setLoadingPack(null),
-        },
-        theme: {
-          color: "#8B5CF6", 
-        },
-      };
-      const rzp = new window.Razorpay(options);
-      rzp.open();
-    } catch (error) {
-      console.error("Payment flow error:", error);
-      alert("An error occurred during checkout.");
-      setLoadingPack(null);
-    }
+        prefill: {                                                                                                                                 
+          email: "student@gkvk.ai",                                                                                                                
+        },                                                                                                                                         
+        theme: {                                                                                                                                   
+          color: "#60A5FA",                                                                                                                        
+        },                                                                                                                                         
+        modal: {                                                                                                                                   
+          ondismiss: function () {                                                                                                                 
+            setLoadingPack(null);                                                                                                                  
+          }                                                                                                                                        
+        }                                                                                                                                          
+      };                                                                                                                                           
+      const rzp = new window.Razorpay(options);                                                                                                    
+      rzp.open();                                                                                                                                  
+    } catch (err) {                                                                                                                                
+      console.error("Payment setup failed:", err);                                                                                                 
+      alert("Error setting up payment: " + err.message);                                                                                           
+      setLoadingPack(null);                                                                                                                        
+    }                                                                                                                                              
   };
 
   const handleCopy = (id) => {
@@ -178,153 +185,219 @@ export default function BillingPage() {
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  const formatDate = (dateStr) => {
-    if (!dateStr) return "";
-    try {
-      const d = new Date(dateStr);
-      const yyyy = d.getFullYear();
-      const mm = String(d.getMonth() + 1).padStart(2, "0");
-      const dd = String(d.getDate()).padStart(2, "0");
-      const hh = String(d.getHours()).padStart(2, "0");
-      const min = String(d.getMinutes()).padStart(2, "0");
-      return `${yyyy}-${mm}-${dd} ${hh}:${min}`;
-    } catch (e) {
-      return dateStr;
-    }
+  const formatDate = (dateString) => {
+    if (!dateString) return "";
+    return new Date(dateString).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
   };
 
-  const filteredTransactions = transactions.filter((tx) =>
-    tx.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    tx.id?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (tx.razorpay_payment_id && tx.razorpay_payment_id.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
+  // Compute stats for visualization
+  const totalSpent = transactions
+    .filter((t) => t.amount < 0)
+    .reduce((acc, curr) => acc + Math.abs(curr.amount), 0);
 
-  // Calculate credit distribution based on real usage data
-  const spentByGroup = {
-    studySets: 0,
-    quizzes: 0,
-    visualAssets: 0,
-  };
+  const studySetsSpent = transactions
+    .filter((t) => t.amount < 0 && t.type.includes("study_set"))
+    .reduce((acc, curr) => acc + Math.abs(curr.amount), 0);
 
-  let totalSpent = 0;
+  const quizzesSpent = transactions
+    .filter((t) => t.amount < 0 && t.type.includes("quiz"))
+    .reduce((acc, curr) => acc + Math.abs(curr.amount), 0);
 
-  transactions.forEach((tx) => {
-    if (tx.amount < 0) {
-      const absAmount = Math.abs(tx.amount);
-      totalSpent += absAmount;
-      if (tx.type === "generation_study_set") {
-        spentByGroup.studySets += absAmount;
-      } else if (tx.type === "generation_quiz") {
-        spentByGroup.quizzes += absAmount;
-      } else if (
-        tx.type === "generation_mindmap" ||
-        tx.type === "generation_flashcards"
-      ) {
-        spentByGroup.visualAssets += absAmount;
-      } else {
-        // Fallback for custom or unidentified generation types
-        spentByGroup.visualAssets += absAmount;
-      }
-    }
-  });
+  const visualSpent = transactions
+    .filter((t) => t.amount < 0 && (t.type.includes("mindmap") || t.type.includes("flowchart")))
+    .reduce((acc, curr) => acc + Math.abs(curr.amount), 0);
 
-  let studySetsPct = 0;
-  let quizzesPct = 0;
-  let visualAssetsPct = 0;
+  const totalSegmentSpent = studySetsSpent + quizzesSpent + visualSpent || 1;
+  const studySetsPct = Math.round((studySetsSpent / totalSegmentSpent) * 100);
+  const quizzesPct = Math.round((quizzesSpent / totalSegmentSpent) * 100);
+  const visualAssetsPct = Math.round((visualSpent / totalSegmentSpent) * 100);
 
-  if (totalSpent > 0) {
-    studySetsPct = Math.round((spentByGroup.studySets / totalSpent) * 100);
-    quizzesPct = Math.round((spentByGroup.quizzes / totalSpent) * 100);
-    visualAssetsPct = Math.max(0, 100 - studySetsPct - quizzesPct);
-  }
+  const circumference = 2 * Math.PI * 40;
+  const studySetsArc = (studySetsPct / 100) * circumference;
+  const quizzesArc = (quizzesPct / 100) * circumference;
+  const visualArc = (visualAssetsPct / 100) * circumference;
 
-  const circumference = 2 * Math.PI * 40; // ~251.327
+  const studySetsOffset = circumference - studySetsArc;
+  const quizzesOffset = circumference - studySetsArc - quizzesArc;
+  const visualOffset = circumference - studySetsArc - quizzesArc - visualArc;
+
   const hasUsage = totalSpent > 0;
 
-  const displayStudySets = hasUsage ? studySetsPct : 33.3;
-  const displayQuizzes = hasUsage ? quizzesPct : 33.3;
-  const displayVisual = hasUsage ? visualAssetsPct : 33.4;
-
-  const studySetsArc = (displayStudySets / 100) * circumference;
-  const quizzesArc = (displayQuizzes / 100) * circumference;
-  const visualArc = (displayVisual / 100) * circumference;
-
-  const studySetsOffset = 0;
-  const quizzesOffset = -studySetsArc;
-  const visualOffset = -(studySetsArc + quizzesArc);
+  // Filter transactions based on search query
+  const filteredTransactions = transactions.filter((tx) =>
+    tx.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (tx.description || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+    tx.type.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
-    <main className="p-6 space-y-8 max-w-6xl mx-auto w-full flex-1">
-      {/* Hero Header */}
-      <section className="space-y-2">
-        <div className="flex items-center gap-3">
-          <span className="material-symbols-outlined text-4xl text-primary animate-pulse">
-            payments
-          </span>
-          <HyperText 
-            className="text-3xl font-bold tracking-tight text-foreground"
-            as="h1"
-          >
-            Billing & Credits
-          </HyperText>
-        </div>
-        <p className="text-muted-foreground text-sm max-w-2xl">
-          Purchase learning credits to synthesize documents, generate quizzes, build interactive mindmaps, and fuel your study suites.
-        </p>
-      </section>
+    <main className="p-6 space-y-10 max-w-6xl mx-auto w-full flex-1 select-none text-text-primary bg-app-bg">
+      {/* Title Header with Outfit typography */}
+      <div className="space-y-2">
+        <h1 className="text-3xl font-black text-text-primary tracking-tight" data-display="true">
+          Billing & Credit Console
+        </h1>
+        <p className="text-text-secondary text-xs">Manage your study credits, redeem vouchers, and review transaction invoices.</p>
+      </div>
 
-      {/* Redeem Voucher Code Section */}
-      <Card className="glass-panel border-muted-foreground/10 bg-surface-container/30 shadow-md">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-bold flex items-center gap-2">
-            <span className="material-symbols-outlined text-primary text-base">
-              confirmation_number
-            </span>
-            Redeem Promo / Voucher Code
-          </CardTitle>
-          <CardDescription className="text-xs">
-            Have a coupon or discount voucher? Enter it below to claim free learning credits.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="pt-2 space-y-3">
-          <div className="flex gap-2">
-            <input
-              type="text"
-              placeholder="Enter code (e.g. WELCOME20)"
-              className="flex-1 max-w-2xl px-3 py-1.5 text-xs bg-muted/40 border border-muted-foreground/10 rounded-lg text-foreground focus:outline-hidden focus:border-primary/50 transition-colors uppercase font-mono tracking-wider"
-              value={promoCode}
-              onChange={(e) => {
-                setPromoCode(e.target.value);
-                setPromoError("");
-                setPromoSuccess("");
-              }}
-            />
-            <Button
-              size="sm"
-              className="text-xs font-bold btn-primary shrink-0 rounded-lg px-4"
-              onClick={handleRedeemPromo}
-              disabled={isRedeeming || !promoCode.trim()}
-            >
-              {isRedeeming ? "Verifying..." : "Apply"}
-            </Button>
+      {/* Top Grid: Balance & Analytics */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        {/* Balance & Promo Card (2/3 width) */}
+        <Card className="lg:col-span-2 border border-app-border bg-app-card rounded-xl overflow-hidden relative p-6 flex flex-col justify-between shadow-sm min-h-[160px]">
+          <div className="absolute inset-0 bg-gradient-to-br from-app-brand/5 via-transparent to-transparent opacity-40 pointer-events-none" />
+          <NoiseTexture className="opacity-[0.02]" />
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 z-10 w-full items-center">
+            {/* Balance Details */}
+            <div className="space-y-3">
+              <span className="text-[10px] font-bold text-text-muted uppercase tracking-wider block">Available Balance</span>
+              <div className="flex items-baseline gap-2">
+                <span className="text-5xl font-black text-text-primary tracking-tighter font-mono">{credits}</span>
+                <span className="text-xs font-bold text-app-brand uppercase tracking-widest">credits</span>
+              </div>
+              <p className="text-[11px] text-text-secondary leading-relaxed">
+                Active learning balance. This allows you to generate new study suites and visual process flowcharts instantly.
+              </p>
+            </div>
+
+            {/* Promo Voucher input */}
+            <div className="space-y-3 p-4 rounded-xl bg-app-inset/40 border border-app-border/40">
+              <span className="text-[10px] font-bold text-text-muted uppercase tracking-wider block">Redeem Promo Voucher</span>
+              <div className="flex items-center gap-2">
+                <Input
+                  placeholder="Voucher code (e.g. WELCOME20)"
+                  value={promoCode}
+                  onChange={(e) => setPromoCode(e.target.value)}
+                  className="bg-app-inset border border-app-border text-text-primary rounded-lg text-xs h-9 focus-visible:ring-1 focus-visible:ring-app-brand"
+                />
+                <Button
+                  size="sm"
+                  className="text-xs font-bold bg-app-brand hover:bg-app-brand-hover text-app-inset shrink-0 rounded-lg px-4 h-9 transition-all cursor-pointer"
+                  onClick={handleRedeemPromo}
+                  disabled={isRedeeming || !promoCode.trim()}
+                >
+                  {isRedeeming ? "Verifying..." : "Apply"}
+                </Button>
+              </div>
+              {promoError && (
+                <p className="text-[10px] text-red-400 font-medium flex items-center gap-1">
+                  <span className="material-symbols-outlined text-[12px]">error</span>
+                  {promoError}
+                </p>
+              )}
+              {promoSuccess && (
+                <p className="text-[10px] text-emerald-400 font-medium flex items-center gap-1">
+                  <span className="material-symbols-outlined text-[12px]">check_circle</span>
+                  {promoSuccess}
+                </p>
+              )}
+            </div>
           </div>
-          {promoError && (
-            <p className="text-[10px] text-rose-400 font-medium flex items-center gap-1">
-              <span className="material-symbols-outlined text-[12px]">error</span>
-              {promoError}
-            </p>
-          )}
-          {promoSuccess && (
-            <p className="text-[10px] text-emerald-400 font-medium flex items-center gap-1">
-              <span className="material-symbols-outlined text-[12px]">check_circle</span>
-              {promoSuccess}
-            </p>
-          )}
-        </CardContent>
-      </Card>
+        </Card>
 
-      {/* Pricing Packages section */}
-      <div className="space-y-6">
+        {/* Credit Distribution (1/3 width) */}
+        <Card className="lg:col-span-1 border border-app-border bg-app-card rounded-xl overflow-hidden relative p-6 flex flex-col justify-between shadow-sm min-h-[160px]">
+          <div className="absolute inset-0 bg-gradient-to-br from-app-brand/5 via-transparent to-transparent opacity-20 pointer-events-none" />
+          <NoiseTexture className="opacity-[0.02]" />
+
+          <div className="space-y-4 z-10 w-full">
+            <span className="text-[10px] font-bold text-text-muted uppercase tracking-wider block">Credit Distribution</span>
+            <div className="flex items-center gap-6">
+              {/* SVG Donut Chart */}
+              <div className="relative w-16 h-16 shrink-0 flex items-center justify-center">
+                <svg width="64" height="64" viewBox="0 0 100 100" className="-rotate-90">
+                  <circle cx="50" cy="50" r="40" fill="transparent" stroke="#1e293b" strokeWidth="12" />
+                  {hasUsage ? (
+                    <>
+                      {studySetsPct > 0 && (
+                        <circle
+                          cx="50"
+                          cy="50"
+                          r="40"
+                          fill="transparent"
+                          stroke="#60A5FA"
+                          strokeWidth="12"
+                          strokeDasharray={`${studySetsArc} ${circumference}`}
+                          strokeDashoffset={studySetsOffset}
+                          className="hover:stroke-[14] transition-all cursor-pointer duration-300"
+                        />
+                      )}
+                      {quizzesPct > 0 && (
+                        <circle
+                          cx="50"
+                          cy="50"
+                          r="40"
+                          fill="transparent"
+                          stroke="#8B5CF6"
+                          strokeWidth="12"
+                          strokeDasharray={`${quizzesArc} ${circumference}`}
+                          strokeDashoffset={quizzesOffset}
+                          className="hover:stroke-[14] transition-all cursor-pointer duration-300"
+                        />
+                      )}
+                      {visualAssetsPct > 0 && (
+                        <circle
+                          cx="50"
+                          cy="50"
+                          r="40"
+                          fill="transparent"
+                          stroke="#10B981"
+                          strokeWidth="12"
+                          strokeDasharray={`${visualArc} ${circumference}`}
+                          strokeDashoffset={visualOffset}
+                          className="hover:stroke-[14] transition-all cursor-pointer duration-300"
+                        />
+                      )}
+                    </>
+                  ) : (
+                    <circle cx="50" cy="50" r="40" fill="transparent" stroke="#334155" strokeWidth="12" />
+                  )}
+                </svg>
+                <div className="absolute inset-0 flex flex-col items-center justify-center font-mono leading-none">
+                  <span className="text-[10px] font-bold text-text-primary">{totalSpent}</span>
+                  <span className="text-[6px] text-text-muted uppercase font-bold mt-0.5">used</span>
+                </div>
+              </div>
+
+              {/* Chart Legend */}
+              <div className="flex-1 space-y-1.5 text-[10px] font-medium text-text-secondary">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-[#60A5FA] shrink-0" />
+                    <span>Study Sets</span>
+                  </div>
+                  <span className="font-bold text-text-primary font-mono">{hasUsage ? `${studySetsPct}%` : "0%"}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-[#8B5CF6] shrink-0" />
+                    <span>Quizzes</span>
+                  </div>
+                  <span className="font-bold text-text-primary font-mono">{hasUsage ? `${quizzesPct}%` : "0%"}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-[#10B981] shrink-0" />
+                    <span>Visuals</span>
+                  </div>
+                  <span className="font-bold text-text-primary font-mono">{hasUsage ? `${visualAssetsPct}%` : "0%"}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </Card>
+      </div>
+
+      {/* Select Credit Packages Grid */}
+      <div className="space-y-4">
+        <span className="text-[10px] font-bold text-text-muted uppercase tracking-widest block">Select Credit Packages</span>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {CREDIT_PACKAGES.map((pkg) => {
             const isPopular = pkg.id === "popular";
@@ -335,81 +408,79 @@ export default function BillingPage() {
               <Card
                 key={pkg.id}
                 className={cn(
-                  "relative flex flex-col justify-between overflow-hidden transition-all duration-300 glow-hover",
+                  "relative flex flex-col justify-between overflow-hidden transition-all duration-300 border bg-app-card rounded-xl min-h-[220px] shadow-sm",
                   isPopular 
-                    ? "border-primary/40 bg-surface-container-high/60 shadow-xl scale-[1.02]" 
-                    : "border-muted-foreground/10 bg-surface-container/40"
+                    ? "border-app-brand bg-gradient-to-b from-app-brand/5 to-transparent scale-[1.02] shadow-md" 
+                    : "border-app-border"
                 )}
               >
                 {isPopular && (
                   <>
-                    <BorderBeam size={100} duration={6} colorFrom="#c0c1ff" colorTo="#8B5CF6" />
+                    <BorderBeam size={100} duration={6} colorFrom="#60A5FA" colorTo="#8B5CF6" />
                     <div className="absolute top-3 right-3 z-10">
-                      <Badge className="bg-primary hover:bg-primary text-primary-foreground font-bold text-[9px] px-2 py-0.5 uppercase tracking-wide">
+                      <Badge className="bg-app-brand text-app-inset font-black text-[8px] px-2 py-0.5 uppercase tracking-wide rounded">
                         Popular
                       </Badge>
                     </div>
                   </>
                 )}
 
-                <CardHeader className="space-y-1">
-                  <CardDescription className="text-xs uppercase font-bold tracking-wider text-muted-foreground">
+                <CardHeader className="space-y-1 p-5">
+                  <CardDescription className="text-[10px] uppercase font-bold tracking-wider text-text-secondary">
                     {pkg.label}
                   </CardDescription>
-                  <CardTitle className="text-2xl font-extrabold text-foreground">
+                  <CardTitle className="text-xl font-black text-text-primary" data-display="true">
                     <span className="font-mono">{pkg.credits}</span> Credits
                   </CardTitle>
                 </CardHeader>
 
-                <CardContent className="space-y-4 flex-1">
+                <CardContent className="space-y-3 px-5 flex-1">
                   <div className="flex items-baseline gap-1">
-                    <span className="text-3xl font-extrabold text-foreground font-mono">₹{pkg.priceINR}</span>
-                    <span className="text-xs text-muted-foreground">one-time</span>
+                    <span className="text-2xl font-black text-text-primary font-mono">₹{pkg.priceINR}</span>
+                    <span className="text-[10px] text-text-secondary">one-time</span>
                   </div>
 
-                  <ul className="text-xs space-y-2 text-muted-foreground pt-2">
+                  <ul className="text-[10px] space-y-2 text-text-secondary pt-2">
                     <li className="flex items-center gap-1.5">
-                      <span className="material-symbols-outlined text-[14px] text-emerald-500 font-bold">check</span>
+                      <span className="material-symbols-outlined text-[13px] text-emerald-500 font-bold">check</span>
                       Instant credit activation
                     </li>
                     <li className="flex items-center gap-1.5">
-                      <span className="material-symbols-outlined text-[14px] text-emerald-500 font-bold">check</span>
+                      <span className="material-symbols-outlined text-[13px] text-emerald-500 font-bold">check</span>
                       Credits never expire
                     </li>
                     <li className="flex items-center gap-1.5">
-                      <span className="material-symbols-outlined text-[14px] text-emerald-500 font-bold">check</span>
-                      Generate up to {Math.floor(pkg.credits / CREDIT_COSTS.study_set)} study sets
+                      <span className="material-symbols-outlined text-[13px] text-emerald-500 font-bold">check</span>
+                      Generate up to <span className="font-mono">{Math.floor(pkg.credits / CREDIT_COSTS.study_set)}</span> study sets
                     </li>
                     {pkg.id === "pro" && (
-                      <li className="flex items-center gap-1.5 font-semibold text-secondary">
-                        <span className="material-symbols-outlined text-[14px] text-secondary font-bold">celebration</span>
+                      <li className="flex items-center gap-1.5 font-bold text-app-brand">
+                        <span className="material-symbols-outlined text-[13px] text-app-brand font-bold">celebration</span>
                         Save over 30% per credit
                       </li>
                     )}
                   </ul>
                 </CardContent>
 
-                <CardFooter className="pt-2">
+                <CardFooter className="p-5 pt-2">
                   <Button
                     className={cn(
-                      "w-full font-bold transition-all",
-                      isPopular ? "btn-primary hover:opacity-90" : "btn-secondary border border-muted-foreground/20 hover:bg-muted/50"
+                      "w-full font-bold text-xs h-9 rounded-lg transition-all cursor-pointer",
+                      isPopular 
+                        ? "bg-app-brand hover:bg-app-brand-hover text-app-inset border-none shadow-sm" 
+                        : "bg-transparent border border-app-border text-text-secondary hover:text-text-primary hover:bg-white/5"
                     )}
                     disabled={loadingPack !== null || isSuccess}
                     onClick={() => handleMockPurchase(pkg)}
                   >
                     {isLoading ? (
-                      <div className="flex items-center gap-2">
-                        <span className="material-symbols-outlined animate-spin text-sm">
-                          progress_activity
-                        </span>
+                      <div className="flex items-center justify-center gap-2">
+                        <span className="material-symbols-outlined animate-spin text-sm">progress_activity</span>
                         <span>Processing...</span>
                       </div>
                     ) : isSuccess ? (
-                      <div className="flex items-center gap-2 text-emerald-400">
-                        <span className="material-symbols-outlined text-sm font-bold">
-                          task_alt
-                        </span>
+                      <div className="flex items-center justify-center gap-1 text-emerald-400 font-bold">
+                        <span className="material-symbols-outlined text-sm font-bold">task_alt</span>
                         <span>Purchased!</span>
                       </div>
                     ) : (
@@ -422,403 +493,271 @@ export default function BillingPage() {
           })}
         </div>
 
-        {/* Secure transaction notice */}
-        <div className="flex items-center gap-3 p-4 rounded-xl bg-primary/5 border border-primary/10 text-xs text-muted-foreground">
-          <span className="material-symbols-outlined text-primary text-xl">
-            lock
-          </span>
+        {/* Secure Transaction notice */}
+        <div className="flex items-center gap-3 p-4 rounded-xl bg-app-inset/40 border border-app-border/40 text-[10px] text-text-secondary">
+          <span className="material-symbols-outlined text-app-brand text-lg">lock</span>
           <div className="space-y-0.5">
-            <strong className="text-foreground font-semibold">Simulated Gateway Active</strong>
-            <p>This is a simulated UI checkout experience. No real money or credentials are required.</p>
+            <strong className="text-text-primary font-bold">Simulated Checkout Active</strong>
+            <p>This is a simulated UI payment checkout experience. No real money or credentials are required.</p>
           </div>
         </div>
       </div>
 
-      {/* Credit Info & Analytics side-by-side */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Left: Credit Usage Guide */}
-        <Card className="glass-panel border-muted-foreground/10 bg-surface-container/30 shadow-md">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-bold flex items-center gap-2">
-              <span className="material-symbols-outlined text-primary text-base">
-                info
-              </span>
-              Credit Usage Guide
-            </CardTitle>
-            <CardDescription className="text-xs">
-              Credits consumed per document synthesis action
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3 pt-2">
-            {[
-              { icon: "auto_awesome", label: "Study Set synthesis", cost: CREDIT_COSTS.study_set, desc: "Includes flashcards + quiz + notes summary" },
-              { icon: "quiz", label: "Quiz generation", cost: CREDIT_COSTS.quiz, desc: "Adds multiple choice queries to set" },
-              { icon: "account_tree", label: "Mindmap generation", cost: CREDIT_COSTS.mindmap, desc: "Builds responsive visual hierarchy" },
-              { icon: "style", label: "Flashcards deck", cost: CREDIT_COSTS.flashcards, desc: "Generates quick review cards" },
-            ].map((item, idx) => (
-              <div key={idx} className="flex items-start justify-between text-xs py-1.5 border-b border-muted-foreground/5 last:border-0">
-                <div className="space-y-0.5">
-                  <div className="flex items-center gap-1.5 font-medium text-foreground">
-                    <span className="material-symbols-outlined text-sm text-muted-foreground">
-                      {item.icon}
-                    </span>
-                    {item.label}
+      {/* Credit Guides & Transaction Invoices Split Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
+        {/* Left: Usage Cost Guide (1/3 width) */}
+        <Card className="lg:col-span-1 border border-app-border bg-app-card rounded-xl overflow-hidden relative p-5 flex flex-col justify-between shadow-sm min-h-[300px]">
+          <div className="space-y-4 w-full">
+            <div className="space-y-1">
+              <span className="text-[10px] font-bold text-text-muted uppercase tracking-wider block">Usage Guide</span>
+              <p className="text-[10px] text-text-secondary">Credits consumed per document synthesis action</p>
+            </div>
+            
+            <div className="space-y-2 pt-2">
+              {[
+                { icon: "auto_awesome", label: "Study Set Synthesis", cost: CREDIT_COSTS.study_set, desc: "Includes flashcards + quiz + notes" },
+                { icon: "quiz", label: "Quiz Generation", cost: CREDIT_COSTS.quiz, desc: "Adds multiple choice queries" },
+                { icon: "account_tree", label: "Mindmap Generation", cost: CREDIT_COSTS.mindmap, desc: "Builds responsive visual hierarchy" },
+                { icon: "style", label: "Flashcards Deck", cost: CREDIT_COSTS.flashcards, desc: "Generates quick review cards" },
+              ].map((item, idx) => (
+                <div key={idx} className="flex items-start justify-between text-xs py-2 border-b border-app-border/40 last:border-0">
+                  <div className="space-y-0.5">
+                    <div className="flex items-center gap-1.5 font-bold text-text-primary">
+                      <span className="material-symbols-outlined text-xs text-text-secondary">
+                        {item.icon}
+                      </span>
+                      {item.label}
+                    </div>
+                    <span className="text-[9px] text-text-secondary">{item.desc}</span>
                   </div>
-                  <span className="text-[10px] text-muted-foreground">{item.desc}</span>
+                  <span className="font-bold text-app-brand shrink-0 ml-4 font-mono">
+                    {item.cost} cr
+                  </span>
                 </div>
-                <span className="font-extrabold text-primary shrink-0 ml-4">
-                  {item.cost} credits
-                </span>
-              </div>
-            ))}
-          </CardContent>
+              ))}
+            </div>
+          </div>
         </Card>
 
-        {/* Right: Credit Distribution SVG Donut Chart */}
-        <Card className="glass-panel border-muted-foreground/10 bg-surface-container/30 shadow-md">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-bold flex items-center gap-2">
-              <span className="material-symbols-outlined text-primary text-base">
-                donut_large
-              </span>
-              Credit Distribution
-            </CardTitle>
-            <CardDescription className="text-xs">
-              Usage breakdown of synthesized materials
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="pt-2 flex flex-col items-center sm:flex-row gap-6">
-            {/* SVG Donut Chart */}
-            <div className="relative w-24 h-24 shrink-0 flex items-center justify-center">
-              <svg width="96" height="96" viewBox="0 0 100 100" className="-rotate-90">
-                {/* Outer circle track */}
-                <circle
-                  cx="50"
-                  cy="50"
-                  r="40"
-                  fill="transparent"
-                  stroke="#1e293b"
-                  strokeWidth="10"
-                />
-                {hasUsage ? (
-                  <>
-                    {/* Segment 1: Study Sets */}
-                    {studySetsPct > 0 && (
-                      <circle
-                        cx="50"
-                        cy="50"
-                        r="40"
-                        fill="transparent"
-                        stroke="#f59e0b"
-                        strokeWidth="10"
-                        strokeDasharray={`${studySetsArc} ${circumference}`}
-                        strokeDashoffset={studySetsOffset}
-                        className="hover:stroke-[12] transition-all cursor-pointer duration-300"
-                        title={`Study Sets: ${studySetsPct}%`}
-                      />
-                    )}
-                    {/* Segment 2: Quizzes */}
-                    {quizzesPct > 0 && (
-                      <circle
-                        cx="50"
-                        cy="50"
-                        r="40"
-                        fill="transparent"
-                        stroke="#3b82f6"
-                        strokeWidth="10"
-                        strokeDasharray={`${quizzesArc} ${circumference}`}
-                        strokeDashoffset={quizzesOffset}
-                        className="hover:stroke-[12] transition-all cursor-pointer duration-300"
-                        title={`Quizzes: ${quizzesPct}%`}
-                      />
-                    )}
-                    {/* Segment 3: Visual Assets */}
-                    {visualAssetsPct > 0 && (
-                      <circle
-                        cx="50"
-                        cy="50"
-                        r="40"
-                        fill="transparent"
-                        stroke="#10b981"
-                        strokeWidth="10"
-                        strokeDasharray={`${visualArc} ${circumference}`}
-                        strokeDashoffset={visualOffset}
-                        className="hover:stroke-[12] transition-all cursor-pointer duration-300"
-                        title={`Visual Assets: ${visualAssetsPct}%`}
-                      />
-                    )}
-                  </>
-                ) : (
-                  // Gray placeholder circle when there is no usage data
-                  <circle
-                    cx="50"
-                    cy="50"
-                    r="40"
-                    fill="transparent"
-                    stroke="#475569"
-                    strokeWidth="10"
-                    strokeDasharray={`${circumference} ${circumference}`}
-                    strokeDashoffset="0"
-                    title="No usage data yet"
-                  />
-                )}
-              </svg>
-              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                <span className="text-[10px] font-bold text-muted-foreground uppercase leading-none">Total</span>
-                <span className="text-sm font-extrabold text-foreground mt-0.5 whitespace-nowrap">
-                  {hasUsage ? `${totalSpent} cr` : "0 cr"}
-                </span>
-              </div>
+        {/* Right: Invoices Table (2/3 width) */}
+        <div className="lg:col-span-2 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="space-y-1">
+              <span className="text-[10px] font-bold text-text-muted uppercase tracking-wider block">Transaction Invoices</span>
+              <p className="text-[10px] text-text-secondary">Review your credit purchases and consumption logs</p>
             </div>
 
-            {/* Chart Legend */}
-            <div className="flex-1 space-y-2 text-xs">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1.5 text-muted-foreground">
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#f59e0b] shrink-0" />
-                  <span>Study Sets</span>
-                </div>
-                <span className="font-extrabold text-foreground">{hasUsage ? `${studySetsPct}%` : "0%"}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1.5 text-muted-foreground">
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#3b82f6] shrink-0" />
-                  <span>Quizzes</span>
-                </div>
-                <span className="font-extrabold text-foreground">{hasUsage ? `${quizzesPct}%` : "0%"}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1.5 text-muted-foreground">
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#10b981] shrink-0" />
-                  <span>Visual Assets</span>
-                </div>
-                <span className="font-extrabold text-foreground">{hasUsage ? `${visualAssetsPct}%` : "0%"}</span>
-              </div>
+            <div className="relative w-full sm:w-60">
+              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-text-muted text-sm">search</span>
+              <input
+                type="text"
+                placeholder="Search history..."
+                className="w-full pl-9 pr-4 py-2 text-[10px] bg-app-inset border border-app-border rounded-lg text-text-primary focus:outline-none focus:border-app-brand focus:ring-1 focus:ring-app-brand transition-all font-medium h-9"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
             </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Transaction & Billing History */}
-      <section className="space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div className="space-y-1">
-            <h2 className="text-lg font-bold text-foreground">Transaction History</h2>
-            <p className="text-xs text-muted-foreground">
-              Review your purchase logs and document synthesis consumption history.
-            </p>
           </div>
 
-          <div className="relative w-full sm:w-64">
-            <span className="material-symbols-outlined absolute left-3 top-2.5 text-muted-foreground text-base">
-              search
-            </span>
-            <input
-              type="text"
-              placeholder="Search history..."
-              className="w-full pl-9 pr-4 py-2 text-xs bg-muted/30 border border-muted-foreground/10 rounded-lg text-foreground focus:outline-hidden focus:border-primary/50 transition-colors"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-        </div>
-
-        {/* Transactions Table */}
-        <div className="overflow-hidden rounded-xl border border-muted-foreground/10 bg-surface-container/20">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs border-collapse">
-              <thead>
-                <tr className="border-b border-muted-foreground/10 bg-muted/30 text-muted-foreground font-semibold">
-                  <th className="p-4">Transaction ID</th>
-                  <th className="p-4">Date & Time</th>
-                  <th className="p-4">Description</th>
-                  <th className="p-4">Type</th>
-                  <th className="p-4 text-right">Amount</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-muted-foreground/5">
-                <AnimatePresence initial={false}>
-                  {loadingData ? (
-                    Array.from({ length: 3 }).map((_, i) => (
-                      <tr key={`skeleton-${i}`} className="animate-pulse">
-                        <td className="p-4"><div className="h-4 w-24 bg-muted/30 rounded" /></td>
-                        <td className="p-4"><div className="h-4 w-28 bg-muted/30 rounded" /></td>
-                        <td className="p-4"><div className="h-4 w-48 bg-muted/30 rounded" /></td>
-                        <td className="p-4"><div className="h-4 w-16 bg-muted/30 rounded" /></td>
-                        <td className="p-4 text-right"><div className="h-4 w-12 bg-muted/30 rounded ml-auto" /></td>
-                      </tr>
-                    ))
-                  ) : filteredTransactions.length > 0 ? (
-                    filteredTransactions.map((tx) => {
-                      const isPositive = tx.amount > 0;
-                      return (
-                        <motion.tr
-                          key={tx.id}
-                          layout
-                          initial={{ opacity: 0, y: -10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          className="hover:bg-muted/10 transition-colors group"
-                        >
-                          {/* Transaction ID */}
-                          <td className="p-4 font-mono font-medium text-muted-foreground flex items-center gap-1.5">
-                            <span title={tx.id}>
-                              {tx.id.startsWith("tx_") ? tx.id : `${tx.id.substring(0, 10)}...`}
-                            </span>
-                            {tx.razorpay_payment_id && (
-                              <button
-                                onClick={() => handleCopy(tx.razorpay_payment_id)}
-                                className="opacity-0 group-hover:opacity-100 hover:text-primary transition-opacity relative ml-1"
-                                title={`Copy Razorpay Payment ID: ${tx.razorpay_payment_id}`}
-                              >
-                                <span className="material-symbols-outlined text-[13px]">
-                                  {copiedId === tx.razorpay_payment_id ? "check" : "content_copy"}
-                                </span>
-                              </button>
-                            )}
-                          </td>
-
-                          {/* Date & Time */}
-                          <td className="p-4 text-muted-foreground whitespace-nowrap">
-                            {formatDate(tx.created_at)}
-                          </td>
-
-                          {/* Description */}
-                          <td className="p-4 text-foreground font-medium max-w-[280px] md:max-w-xs truncate">
-                            {tx.description}
-                          </td>
-
-                          {/* Type Badge */}
-                          <td className="p-4">
-                            <Badge
-                              className={cn(
-                                "text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5",
-                                tx.type === "purchase" && "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20",
-                                tx.type.startsWith("generation") && "bg-amber-500/10 text-amber-400 border border-amber-500/20",
-                                tx.type === "bonus" && "bg-purple-500/10 text-purple-400 border border-purple-500/20"
+          {/* Table Container */}
+          <div className="overflow-hidden rounded-xl border border-app-border bg-app-card shadow-sm">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-[11px] border-collapse">
+                <thead>
+                  <tr className="border-b border-app-border bg-app-inset/40 text-text-secondary font-bold uppercase tracking-wider text-[9px]">
+                    <th className="p-3.5">Transaction ID</th>
+                    <th className="p-3.5">Date & Time</th>
+                    <th className="p-3.5">Description</th>
+                    <th className="p-3.5">Type</th>
+                    <th className="p-3.5 text-right">Amount</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-app-border/40 text-text-secondary">
+                  <AnimatePresence initial={false}>
+                    {loadingData ? (
+                      Array.from({ length: 3 }).map((_, i) => (
+                        <tr key={`skeleton-${i}`} className="animate-pulse">
+                          <td className="p-3.5"><div className="h-3 w-16 bg-app-inset/60 rounded" /></td>
+                          <td className="p-3.5"><div className="h-3 w-24 bg-app-inset/60 rounded" /></td>
+                          <td className="p-3.5"><div className="h-3 w-40 bg-app-inset/60 rounded" /></td>
+                          <td className="p-3.5"><div className="h-3 w-12 bg-app-inset/60 rounded" /></td>
+                          <td className="p-3.5 text-right"><div className="h-3 w-8 bg-app-inset/60 rounded ml-auto" /></td>
+                        </tr>
+                      ))
+                    ) : filteredTransactions.length > 0 ? (
+                      filteredTransactions.map((tx) => {
+                        const isPositive = tx.amount > 0;
+                        return (
+                          <motion.tr
+                            key={tx.id}
+                            layout
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="hover:bg-white/5 transition-colors group"
+                          >
+                            {/* Transaction ID */}
+                            <td className="p-3.5 font-mono font-medium text-text-secondary flex items-center gap-1.5">
+                              <span title={tx.id}>
+                                {tx.id.startsWith("tx_") ? tx.id : `${tx.id.substring(0, 10)}...`}
+                              </span>
+                              {tx.razorpay_payment_id && (
+                                <button
+                                  onClick={() => handleCopy(tx.razorpay_payment_id)}
+                                  className="opacity-0 group-hover:opacity-100 hover:text-app-brand transition-opacity relative ml-1 cursor-pointer"
+                                  title={`Copy Payment ID: ${tx.razorpay_payment_id}`}
+                                >
+                                  <span className="material-symbols-outlined text-[12px]">
+                                    {copiedId === tx.razorpay_payment_id ? "check" : "content_copy"}
+                                  </span>
+                                </button>
                               )}
-                            >
-                              {tx.type === "purchase" ? "Purchase" : tx.type === "bonus" ? "Bonus" : "Deduction"}
-                            </Badge>
-                          </td>
+                            </td>
 
-                          {/* Amount */}
-                          <td className={cn(
-                            "p-4 text-right font-extrabold whitespace-nowrap text-sm",
-                            isPositive ? "text-emerald-400" : "text-muted-foreground"
-                          )}>
-                            {isPositive ? `+${tx.amount}` : tx.amount} cr
-                          </td>
-                        </motion.tr>
-                      );
-                    })
-                  ) : (
-                    <tr>
-                      <td colSpan={5} className="p-8 text-center text-muted-foreground">
-                        No transactions found matching your search.
-                      </td>
-                    </tr>
-                  )}
-                </AnimatePresence>
-              </tbody>
-            </table>
+                            {/* Date */}
+                            <td className="p-3.5 text-text-secondary whitespace-nowrap font-mono">
+                              {formatDate(tx.created_at)}
+                            </td>
+
+                            {/* Description */}
+                            <td className="p-3.5 text-text-primary font-medium max-w-[200px] truncate">
+                              {tx.description}
+                            </td>
+
+                            {/* Type */}
+                            <td className="p-3.5">
+                              <Badge
+                                className={cn(
+                                  "text-[8px] font-black uppercase tracking-wider px-1.5 py-0 h-4 rounded",
+                                  tx.type === "purchase" && "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20",
+                                  tx.type.startsWith("generation") && "bg-amber-500/10 text-amber-400 border border-amber-500/20",
+                                  tx.type === "bonus" && "bg-purple-500/10 text-purple-400 border border-purple-500/20"
+                                )}
+                              >
+                                {tx.type === "purchase" ? "Purchase" : tx.type === "bonus" ? "Bonus" : "Deduction"}
+                              </Badge>
+                            </td>
+
+                            {/* Amount */}
+                            <td className={cn(
+                              "p-3.5 text-right font-bold whitespace-nowrap font-mono",
+                              isPositive ? "text-emerald-400" : "text-text-muted"
+                            )}>
+                              {isPositive ? `+${tx.amount}` : tx.amount} cr
+                            </td>
+                          </motion.tr>
+                        );
+                      })
+                    ) : (
+                      <tr>
+                        <td colSpan={5} className="p-8 text-center text-text-muted">
+                          No transactions found matching your search.
+                        </td>
+                      </tr>
+                    )}
+                  </AnimatePresence>
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
-      </section>
+
+      </div>
 
       {/* Footer / Compliance Policy Links */}
-      <footer className="mt-12 pt-6 border-t border-muted-foreground/10 text-center space-y-4">
-        <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-xs text-muted-foreground">
-          <button onClick={() => setPolicyModal("terms")} className="hover:text-primary transition-colors cursor-pointer font-medium">
+      <footer className="mt-12 pt-6 border-t border-app-border/40 text-center space-y-4">
+        <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-[10px] font-bold text-text-secondary uppercase tracking-wider">
+          <button onClick={() => setPolicyModal("terms")} className="hover:text-app-brand transition-colors cursor-pointer">
             Terms & Conditions
           </button>
-          <span className="text-muted-foreground/30">•</span>
-          <button onClick={() => setPolicyModal("privacy")} className="hover:text-primary transition-colors cursor-pointer font-medium">
+          <span className="text-app-border/40">•</span>
+          <button onClick={() => setPolicyModal("privacy")} className="hover:text-app-brand transition-colors cursor-pointer">
             Privacy Policy
           </button>
-          <span className="text-muted-foreground/30">•</span>
-          <button onClick={() => setPolicyModal("refund")} className="hover:text-primary transition-colors cursor-pointer font-medium">
-            Refund & Cancellation Policy
+          <span className="text-app-border/40">•</span>
+          <button onClick={() => setPolicyModal("refund")} className="hover:text-app-brand transition-colors cursor-pointer">
+            Refund Policy
           </button>
-          <span className="text-muted-foreground/30">•</span>
-          <button onClick={() => setPolicyModal("contact")} className="hover:text-primary transition-colors cursor-pointer font-medium">
+          <span className="text-app-border/40">•</span>
+          <button onClick={() => setPolicyModal("contact")} className="hover:text-app-brand transition-colors cursor-pointer">
             Contact Support
           </button>
         </div>
-        <p className="text-[10px] text-muted-foreground/50">
-          © {new Date().getFullYear()} Gkvk_AI. All rights reserved.
+        <p className="text-[9px] text-text-muted font-mono uppercase tracking-widest">
+          © {new Date().getFullYear()} gkvk.ai. All rights reserved.
         </p>
       </footer>
 
       {/* Policy Dialog */}
       <Dialog open={policyModal !== null} onOpenChange={(open) => !open && setPolicyModal(null)}>
-        <DialogContent className="w-full max-w-[calc(100%-2rem)] sm:max-w-2xl max-h-[85vh] overflow-y-auto bg-surface border border-muted-foreground/15 text-foreground rounded-xl">
+        <DialogContent className="w-[90vw] md:w-[600px] max-w-none max-h-[80vh] overflow-y-auto bg-app-card border border-app-border text-text-primary rounded-xl p-6 shadow-xl">
           {policyModal === "terms" && (
-            <div className="space-y-4 pt-2">
+            <div className="space-y-4 pt-1">
               <DialogHeader>
-                <DialogTitle className="text-base font-extrabold text-foreground">Terms & Conditions</DialogTitle>
+                <DialogTitle className="text-base font-bold text-text-primary uppercase tracking-wider">Terms & Conditions</DialogTitle>
               </DialogHeader>
-              <div className="text-xs text-muted-foreground space-y-3 leading-relaxed">
-                <p>Welcome to StudyAI. By purchasing credits and using our services, you agree to these Terms & Conditions.</p>
-                <h4 className="font-bold text-foreground text-sm">1. Credits System</h4>
+              <div className="text-xs text-text-secondary space-y-3 leading-relaxed">
+                <p>Welcome to gkvk.ai. By purchasing credits and using our services, you agree to these Terms & Conditions.</p>
+                <h4 className="font-bold text-text-primary text-xs uppercase tracking-wide mt-2">1. Credits System</h4>
                 <p>Credits purchased on this platform are virtual tokens used to synthesize study material, quizzes, flashcards, and mindmaps. They have no monetary cash value, cannot be redeemed for fiat currency, and are non-transferable.</p>
-                <h4 className="font-bold text-foreground text-sm">2. Account Responsibility</h4>
+                <h4 className="font-bold text-text-primary text-xs uppercase tracking-wide mt-2">2. Account Responsibility</h4>
                 <p>You are responsible for maintaining the confidentiality of your account credentials and for all activities that occur under your account.</p>
-                <h4 className="font-bold text-foreground text-sm">3. Limitation of Liability</h4>
-                <p>StudyAI services are provided "as is". We are not responsible for any data loss, service interruptions, or accuracy of AI-synthesized content.</p>
+                <h4 className="font-bold text-text-primary text-xs uppercase tracking-wide mt-2">3. Limitation of Liability</h4>
+                <p>gkvk.ai services are provided "as is". We are not responsible for any data loss, service interruptions, or accuracy of AI-synthesized content.</p>
               </div>
             </div>
           )}
           {policyModal === "privacy" && (
-            <div className="space-y-4 pt-2">
+            <div className="space-y-4 pt-1">
               <DialogHeader>
-                <DialogTitle className="text-base font-extrabold text-foreground">Privacy Policy</DialogTitle>
+                <DialogTitle className="text-base font-bold text-text-primary uppercase tracking-wider">Privacy Policy</DialogTitle>
               </DialogHeader>
-              <div className="text-xs text-muted-foreground space-y-3 leading-relaxed">
-                <p>At StudyAI, we prioritize your data privacy. This policy explains how we collect and use your details.</p>
-                <h4 className="font-bold text-foreground text-sm">1. Data Collection</h4>
+              <div className="text-xs text-text-secondary space-y-3 leading-relaxed">
+                <p>At gkvk.ai, we prioritize your data privacy. This policy explains how we collect and use your details.</p>
+                <h4 className="font-bold text-text-primary text-xs uppercase tracking-wide mt-2">1. Data Collection</h4>
                 <p>We store your email, username, credit balances, and document uploads strictly to process your study generations.</p>
-                <h4 className="font-bold text-foreground text-sm">2. Payment Processing</h4>
+                <h4 className="font-bold text-text-primary text-xs uppercase tracking-wide mt-2">2. Payment Processing</h4>
                 <p>All payments are securely handled through Razorpay. We do not store or process your credit card numbers, netbanking credentials, or UPI PINs on our servers.</p>
-                <h4 className="font-bold text-foreground text-sm">3. Third-party Sharing</h4>
+                <h4 className="font-bold text-text-primary text-xs uppercase tracking-wide mt-2">3. Third-party Sharing</h4>
                 <p>We do not sell or share your personal documents or personal data with third-party advertisers.</p>
               </div>
             </div>
           )}
           {policyModal === "refund" && (
-            <div className="space-y-4 pt-2">
+            <div className="space-y-4 pt-1">
               <DialogHeader>
-                <DialogTitle className="text-base font-extrabold text-foreground">Refund & Cancellation Policy</DialogTitle>
+                <DialogTitle className="text-base font-bold text-text-primary uppercase tracking-wider">Refund & Cancellation Policy</DialogTitle>
               </DialogHeader>
-              <div className="text-xs text-muted-foreground space-y-3 leading-relaxed">
-                <p>We want you to be fully satisfied with StudyAI. Our refund policy for learning credits is as follows:</p>
-                <h4 className="font-bold text-foreground text-sm">1. Eligibility</h4>
+              <div className="text-xs text-text-secondary space-y-3 leading-relaxed">
+                <p>We want you to be fully satisfied with gkvk.ai. Our refund policy for learning credits is as follows:</p>
+                <h4 className="font-bold text-text-primary text-xs uppercase tracking-wide mt-2">1. Refund Eligibility</h4>
                 <p>Refunds can be requested within 7 days of purchase, provided none of the credits from that specific package have been consumed.</p>
-                <h4 className="font-bold text-foreground text-sm">2. Non-Refundable Items</h4>
+                <h4 className="font-bold text-text-primary text-xs uppercase tracking-wide mt-2">2. Non-Refundable Items</h4>
                 <p>Once credits are used to generate study sets, quizzes, or other materials, the credits become consumed and are non-refundable.</p>
-                <h4 className="font-bold text-foreground text-sm">3. How to Request</h4>
-                <p>To request a refund, please contact us at <span className="text-primary font-bold">roycomp44@gmail.com</span> with your transaction details and Razorpay Payment ID.</p>
+                <h4 className="font-bold text-text-primary text-xs uppercase tracking-wide mt-2">3. How to Request</h4>
+                <p>To request a refund, please contact us at <span className="text-app-brand font-bold">roycomp44@gmail.com</span> with your transaction details and Razorpay Payment ID.</p>
               </div>
             </div>
           )}
           {policyModal === "contact" && (
-            <div className="space-y-4 pt-2">
+            <div className="space-y-4 pt-1">
               <DialogHeader>
-                <DialogTitle className="text-base font-extrabold text-foreground">Contact Support</DialogTitle>
+                <DialogTitle className="text-base font-bold text-text-primary uppercase tracking-wider">Contact Support</DialogTitle>
               </DialogHeader>
-              <div className="text-xs text-muted-foreground space-y-3 leading-relaxed">
+              <div className="text-xs text-text-secondary space-y-3 leading-relaxed">
                 <p>If you have any questions, feedback, or refund inquiries, please feel free to reach out to us:</p>
-                <div className="space-y-3 p-3 bg-muted/40 rounded-lg text-foreground font-medium">
+                <div className="space-y-3 p-3.5 bg-app-inset/60 border border-app-border rounded-xl text-text-primary font-medium mt-2">
                   <div className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-sm text-primary">email</span>
+                    <span className="material-symbols-outlined text-sm text-app-brand">email</span>
                     <span>roycomp44@gmail.com</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-sm text-primary">schedule</span>
+                    <span className="material-symbols-outlined text-sm text-app-brand">schedule</span>
                     <span>Support Hours: 9 AM - 6 PM IST (Mon-Fri)</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-sm text-primary">location_on</span>
-                    <span>Gkvk college , Bangalore, India</span>
+                    <span className="material-symbols-outlined text-sm text-app-brand">location_on</span>
+                    <span>GKVK College, Bangalore, India</span>
                   </div>
                 </div>
               </div>

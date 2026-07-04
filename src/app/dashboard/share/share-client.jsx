@@ -21,6 +21,7 @@ import {
 } from "@/actions/notes";
 import client, { uploadHandler } from "@/config/client";
 import Image from "next/image";
+import { NoiseTexture } from "@/components/ui/noise-texture";
 
 function useDebounce(value, delay = 300) {
   const [debouncedValue, setDebouncedValue] = useState(value);
@@ -777,68 +778,90 @@ export default function SharingHubPage() {
         </AnimatePresence>
       </div>
 
-      {/* Header Banner */}
-      <section className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-app-card border border-app-border p-6 md:p-8 rounded-xl relative overflow-hidden shadow-sm">
-        <div className="space-y-3 relative z-10 max-w-2xl">
-          <div className="flex flex-wrap gap-2 items-center">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-app-brand/10 border border-app-brand/20">
-              <span className="w-1.5 h-1.5 rounded-full bg-app-brand animate-pulse" />
-              <span className="text-[10px] uppercase font-bold tracking-wider text-app-brand">GKVK Community Hub</span>
-            </div>
-            
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="text-[10px] uppercase font-bold tracking-wider text-emerald-400">
-                {activeUsersCount} {activeUsersCount === 1 ? 'Student' : 'Students'} Online
-              </span>
-            </div>
-          </div>
-          <h1 className="text-3xl font-extrabold text-text-primary tracking-tight leading-none md:text-4xl">
-            Notes & Papers Sharing Hub
-          </h1>
-          <p className="text-xs text-text-secondary leading-relaxed">
-            Collaboratively crowdsource verified lecture notes, GKVK question banks, syllabus guides, and lab records. Scan shared PDF resources directly into your personal AI Study Sets with one click.
-          </p>
-        </div>
+      {/* Header Banner & Analytics Console */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        {/* Left Side: Header Banner (2/3 width) */}
+        <section className="lg:col-span-2 flex flex-col justify-between gap-6 bg-app-card border border-app-border p-6 md:p-8 rounded-xl relative overflow-hidden shadow-sm">
+          <div className="absolute inset-0 bg-gradient-to-br from-app-brand/5 via-transparent to-transparent opacity-40 pointer-events-none" />
+          <NoiseTexture className="opacity-[0.02]" />
 
-        <div className="flex flex-col sm:flex-row gap-3 relative z-10 shrink-0">
-          <Button
-            onClick={() => setIsUploadOpen(true)}
-            className="rounded-lg font-bold bg-app-brand hover:bg-app-brand-hover text-white border-none shadow-sm h-12 text-sm transition-all px-6"
-          >
-            <span className="material-symbols-outlined mr-2">upload</span>
-            Upload & Share
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => setIsRequestOpen(true)}
-            className="rounded-lg font-bold border border-app-border hover:bg-white/5 text-text-primary h-12 text-sm transition-all px-6"
-          >
-            <span className="material-symbols-outlined mr-2">contact_support</span>
-            Request Resource
-          </Button>
-        </div>
-      </section>
-
-      {/* Analytics Mini-cards */}
-      <section className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {[
-          { label: "Community Uploads", value: `${documents.length} shared`, icon: "folder_open", desc: "Lecture notes, study guides, and templates" },
-          { label: "Total Downloads", value: `${totalDownloads} files`, icon: "download", desc: "Resources accessed by students this semester" },
-          { label: "Pending Requests", value: `${requests.length} requests`, icon: "pending_actions", desc: "Materials looking for authors to fulfill" },
-        ].map((stat, i) => (
-          <div key={i} className="flex flex-col p-5 rounded-xl bg-app-card border border-app-border relative overflow-hidden group shadow-sm">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-[18px] text-app-brand">{stat.icon}</span>
-                <span className="text-xs font-semibold text-text-secondary uppercase tracking-wider">{stat.label}</span>
+          <div className="space-y-4 relative z-10 w-full">
+            <div className="flex flex-wrap gap-2 items-center">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-app-brand/10 border border-app-brand/20">
+                <span className="w-1.5 h-1.5 rounded-full bg-app-brand animate-pulse" />
+                <span className="text-[10px] uppercase font-bold tracking-wider text-app-brand">GKVK Community Hub</span>
+              </div>
+              
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="text-[10px] uppercase font-bold tracking-wider text-emerald-400">
+                  {activeUsersCount} {activeUsersCount === 1 ? 'Student' : 'Students'} Online
+                </span>
               </div>
             </div>
-            <span className="text-2xl font-extrabold text-text-primary tracking-tight">{stat.value}</span>
-            <span className="text-[10px] text-text-secondary mt-1 font-medium">{stat.desc}</span>
+            <h1 className="text-3xl font-black text-text-primary tracking-tight leading-none md:text-4xl" data-display="true">
+              Notes & Papers Sharing Hub
+            </h1>
+            <p className="text-xs text-text-secondary leading-relaxed">
+              Collaboratively crowdsource verified lecture notes, GKVK question banks, syllabus guides, and lab records. Scan shared PDF resources directly into your personal AI Study Sets with one click.
+            </p>
           </div>
-        ))}
-      </section>
+
+          <div className="flex flex-col sm:flex-row gap-3 relative z-10 shrink-0 mt-2">
+            <Button
+              onClick={() => setIsUploadOpen(true)}
+              className="rounded-lg font-bold bg-app-brand hover:bg-app-brand-hover text-app-inset border-none shadow-sm h-10 text-xs transition-all px-5 cursor-pointer"
+            >
+              <span className="material-symbols-outlined mr-2 text-sm">upload</span>
+              Upload & Share
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setIsRequestOpen(true)}
+              className="rounded-lg font-bold border border-app-border hover:bg-white/5 text-text-secondary hover:text-text-primary h-10 text-xs transition-all px-5 cursor-pointer"
+            >
+              <span className="material-symbols-outlined mr-2 text-sm">contact_support</span>
+              Request Resource
+            </Button>
+          </div>
+        </section>
+
+        {/* Right Side: Quick Stats (1/3 width) */}
+        <section className="lg:col-span-1 border border-app-border bg-app-card rounded-xl overflow-hidden relative p-6 flex flex-col justify-between shadow-sm min-h-[180px]">
+          <div className="absolute inset-0 bg-gradient-to-br from-app-brand/5 via-transparent to-transparent opacity-20 pointer-events-none" />
+          <NoiseTexture className="opacity-[0.02]" />
+
+          <div className="space-y-4 z-10 w-full">
+            <span className="text-[10px] font-bold text-text-muted uppercase tracking-wider block">Community Stats</span>
+            
+            <div className="space-y-3.5">
+              <div className="flex items-center justify-between text-xs">
+                <div className="flex items-center gap-1.5 text-text-secondary">
+                  <span className="material-symbols-outlined text-[13px]">folder_open</span>
+                  <span>Community Uploads</span>
+                </div>
+                <span className="font-bold text-text-primary font-mono">{documents.length}</span>
+              </div>
+              <div className="flex items-center justify-between text-xs">
+                <div className="flex items-center gap-1.5 text-text-secondary">
+                  <span className="material-symbols-outlined text-[13px]">download</span>
+                  <span>Total Downloads</span>
+                </div>
+                <span className="font-bold text-text-primary font-mono">{totalDownloads}</span>
+              </div>
+              <div className="flex items-center justify-between text-xs">
+                <div className="flex items-center gap-1.5 text-text-secondary">
+                  <span className="material-symbols-outlined text-[13px]">pending_actions</span>
+                  <span>Pending Requests</span>
+                </div>
+                <span className="font-bold text-text-primary font-mono">{requests.length}</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </div>
 
       {/* Navigation and Toolbar */}
       <section className="space-y-4">
@@ -1091,7 +1114,7 @@ export default function SharingHubPage() {
                           >
                             <span className="material-symbols-outlined text-[14px]">thumb_up</span>
                           </button>
-                          <span className="text-[10px] font-bold px-1.5 text-text-primary">{doc.upvotes}</span>
+                          <span className="text-[10px] font-bold px-1.5 text-text-primary font-mono">{doc.upvotes}</span>
                         </div>
                       </div>
 
@@ -1151,7 +1174,7 @@ export default function SharingHubPage() {
                         ) : (
                           <>
                             <span className="material-symbols-outlined text-[14px]">download</span>
-                            <span>{doc.downloads}</span>
+                            <span className="font-mono">{doc.downloads}</span>
                           </>
                         )}
                       </button>

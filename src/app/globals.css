@@ -413,3 +413,29 @@ button:not(:disabled):hover,
 .animate-shimmer {
   animation: shimmer 2s linear infinite;
 }
+
+/* Custom Sleek Dark Scrollbar Styles */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #020617;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border-radius: 9999px;
+  border: 1px solid #334155;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #60A5FA;
+}
+
+/* Firefox Support */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #1e293b #020617;
+}

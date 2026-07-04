@@ -29,6 +29,7 @@ import { Suspense } from "react";
 import { CREDIT_COSTS } from "@/lib/credits";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { motion, AnimatePresence } from "motion/react";
+import { InsufficientCreditsModal } from "@/components/dashboard/insufficient-credits-modal";
 
 export function WorkspaceContent() {
   const searchParams = useSearchParams();
