@@ -1,30 +1,5 @@
 "use server"
-import { createServerClient } from "@supabase/ssr";
-import { cookies } from "next/headers";
-
-async function getSupabaseServerClient() {
-  const cookieStore = await cookies();
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
-
-  if (!supabaseUrl || !supabaseAnonKey) {
-    throw new Error('Supabase configuration is missing.');
-  }
-
-  return createServerClient(supabaseUrl, supabaseAnonKey, {
-    cookies: {
-      get(name) {
-        return cookieStore.get(name)?.value;
-      },
-      set(name, value, options) {
-        cookieStore.set({ name, value, ...options });
-      },
-      remove(name, options) {
-        cookieStore.delete({ name, ...options });
-      },
-    },
-  });
-}
+import { getSupabaseServerClient } from "@/lib/supabase-server";
 
 // export async function createStudySet(formData) {
 //   const supabase = await getSupabaseServerClient();

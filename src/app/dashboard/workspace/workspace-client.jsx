@@ -883,7 +883,7 @@ export function WorkspaceContent() {
                       </div>
                     </div>
 
-                    <div className="space-y-2 max-w-sm">
+                    <div className="space-y-2">
                       <h3 className="text-base font-bold text-text-primary uppercase tracking-wider animate-pulse">
                         Synthesizing Study Suite
                       </h3>

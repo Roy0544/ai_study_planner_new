@@ -1,30 +1,7 @@
 "use server";
 
-import { createServerClient } from "@supabase/ssr";
-import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
-
-// ─── Supabase Client Helper ──────────────────────────────────────────────────
-async function getSupabaseServerClient() {
-  const cookieStore = await cookies();
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL?.trim(),
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim(),
-    {
-      cookies: {
-        get(name) {
-          return cookieStore.get(name)?.value;
-        },
-        set(name, value, options) {
-          cookieStore.set({ name, value, ...options });
-        },
-        remove(name, options) {
-          cookieStore.delete({ name, ...options });
-        },
-      },
-    }
-  );
-}
+import { getSupabaseServerClient, getSupabaseAdminClient } from "@/lib/supabase-server";
 
 // ─── Fetch All Shared Documents ─────────────────────────────────────────────
 export async function fetchSharedDocuments({ category = "All", type = "all", search = "", sortBy = "recent" } = {}) {
@@ -350,7 +327,7 @@ export async function toggleUpvoteRequest(requestId) {
 // ─── Record Document Download ───────────────────────────────────────────────
 export async function incrementDownloadCount(documentId) {
   try {
-    const supabase = await getSupabaseServerClient();
+    const supabase = getSupabaseAdminClient();
     
     // Fetch current download count
     const { data: doc, error: fetchError } = await supabase

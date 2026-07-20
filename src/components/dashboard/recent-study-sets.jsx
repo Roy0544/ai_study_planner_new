@@ -25,7 +25,7 @@ export async function RecentStudySets() {
           <Link href="/dashboard/sets">View All</Link>
         </Button>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-6 w-full">
         {recentSets.map((set, i) => (
           <Link href={`/dashboard/workspace?id=${set.id}`} key={i} className="block h-full">
             <div className="group p-5 border border-app-border bg-app-card hover:-translate-y-0.5 transition-all duration-200 cursor-pointer shadow-sm hover:shadow-md rounded-xl h-full flex flex-col justify-between">

@@ -1189,7 +1189,7 @@ export default function SharingHubPage() {
                 </div>
                 <div className="space-y-1">
                   <h3 className="text-lg font-bold">No results found</h3>
-                  <p className="text-muted-foreground text-xs max-w-sm">
+                  <p className="text-muted-foreground text-xs">
                     No documents matched your filters. Try resetting the category or adjust your search keywords.
                   </p>
                 </div>

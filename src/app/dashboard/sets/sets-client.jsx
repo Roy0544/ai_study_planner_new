@@ -49,7 +49,7 @@ export default function StudySetsClient({ initialSets }) {
       variants={containerVariants}
       initial="hidden"
       animate="show"
-      className="p-6 space-y-8 max-w-7xl mx-auto w-full flex-1"
+      className="p-6 space-y-8 w-full flex-1"
     >
       {/* Header Section */}
       <motion.div 
@@ -124,7 +124,7 @@ export default function StudySetsClient({ initialSets }) {
               <h3 className="text-xl font-bold text-text-primary">
                 {searchQuery ? "No search results found" : "No study sets yet"}
               </h3>
-              <p className="text-text-secondary max-w-sm mx-auto text-sm leading-relaxed">
+              <p className="text-text-secondary mx-auto text-sm leading-relaxed">
                 {searchQuery 
                   ? `We couldn't find any study sets matching "${searchQuery}". Try typing another search term.`
                   : "Start by creating your first AI-powered study set from your notes or files."

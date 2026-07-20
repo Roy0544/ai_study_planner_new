@@ -5,11 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { FlickeringGrid } from "@/components/ui/flickering-grid";
-import { handleGoogleLogin, handleEmailLogin } from "@/config/client";
+import { handleGoogleLogin } from "@/config/client";
+import { loginWithEmail } from "@/actions/auth";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
-import { useRouter } from "next/navigation";
 import {
   Form,
   FormControl,
@@ -27,7 +27,6 @@ const formSchema = z.object({
 });
 
 export default function LoginClient() {
-  const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -42,10 +41,10 @@ export default function LoginClient() {
   const onSubmit = async (values) => {
     setIsLoading(true);
     setError("");
-    const result = await handleEmailLogin(values.email, values.password);
-    if (result.success) {
-      router.push("/dashboard");
-    } else {
+    // loginWithEmail is a server action - it sets cookies server-side
+    // and calls redirect("/dashboard") on success, so we only land here on error.
+    const result = await loginWithEmail(values.email, values.password);
+    if (result?.success === false) {
       setError(result.error || "Authentication failed. Please check your credentials.");
       setIsLoading(false);
     }

@@ -2,46 +2,56 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse } from "next/server";
 
 export async function proxy(request) {
+  const { nextUrl } = request;
+
+  // ─── PKCE Code Intercept ────────────────────────────────────────────────────
+  // Supabase OAuth redirects back with ?code= on whatever URL was set as
+  // redirectTo. If that URL is NOT /auth/callback (e.g. the root or /dashboard),
+  // we catch it here and funnel it through the callback route handler so the code
+  // exchange always happens server-side before the protected page loads.
+  const code = nextUrl.searchParams.get("code");
+  if (code && nextUrl.pathname !== "/auth/callback") {
+    const callbackUrl = new URL("/auth/callback", request.url);
+    callbackUrl.searchParams.set("code", code);
+    // After exchange, redirect to dashboard (not back to wherever the code landed)
+    callbackUrl.searchParams.set("next", "/dashboard");
+    return NextResponse.redirect(callbackUrl);
+  }
+
+  // ─── Session Refresh ────────────────────────────────────────────────────────
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (!supabaseUrl || !supabaseAnonKey) {
+    return NextResponse.next({ request: { headers: request.headers } });
+  }
+
   let response = NextResponse.next({
     request: {
       headers: request.headers,
     },
   });
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-  if (!supabaseUrl || !supabaseAnonKey) {
-    return response;
-  }
-
   const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
     cookies: {
-      get(name) {
-        return request.cookies.get(name)?.value;
+      getAll() {
+        return request.cookies.getAll();
       },
-      set(name, value, options) {
-        request.cookies.set({ name, value, ...options });
-        response = NextResponse.next({
-          request: {
-            headers: request.headers,
-          },
+      setAll(cookiesToSet) {
+        cookiesToSet.forEach(({ name, value }) => {
+          request.cookies.set(name, value);
         });
-        response.cookies.set({ name, value, ...options });
-      },
-      remove(name, options) {
-        request.cookies.set({ name, value: "", ...options });
         response = NextResponse.next({
-          request: {
-            headers: request.headers,
-          },
+          request,
         });
-        response.cookies.set({ name, value: "", ...options });
+        cookiesToSet.forEach(({ name, value, options }) => {
+          response.cookies.set(name, value, options);
+        });
       },
     },
   });
 
-  // This will refresh the session if it's expired
+  // Refresh the session if expired — must be called before any redirect checks.
   await supabase.auth.getUser();
 
   return response;

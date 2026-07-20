@@ -8,6 +8,7 @@ import { RainbowButton } from "@/components/ui/rainbow-button";
 import { AnimatedGradientText } from "@/components/ui/animated-gradient-text";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { motion, AnimatePresence } from "motion/react";
 
 export function MockStudySetPreview() {
   const [activeTab, setActiveTab] = useState("flashcards");
@@ -35,227 +36,275 @@ export function MockStudySetPreview() {
         <button
           onClick={() => setActiveTab("notes")}
           className={cn(
-            "flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all shrink-0",
-            activeTab === "notes"
-              ? "bg-app-brand/10 text-app-brand border border-app-brand/20"
-              : "text-text-secondary hover:text-text-primary hover:bg-white/5"
+            "relative flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-colors shrink-0 outline-none select-none",
+            activeTab === "notes" ? "text-app-brand animate-none" : "text-text-secondary hover:text-text-primary"
           )}
         >
-          <span className="material-symbols-outlined text-[16px]">notes</span>
-          Concept Notes
+          {activeTab === "notes" && (
+            <motion.div
+              layoutId="activeTabIndicator"
+              className="absolute inset-0 bg-app-brand/10 border border-app-brand/20 rounded-lg"
+              transition={{ type: "spring", stiffness: 380, damping: 30 }}
+            />
+          )}
+          <span className="relative z-10 flex items-center gap-2">
+            <span className="material-symbols-outlined text-[16px]">notes</span>
+            Concept Notes
+          </span>
         </button>
+        
         <button
           onClick={() => setActiveTab("flashcards")}
           className={cn(
-            "flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all shrink-0",
-            activeTab === "flashcards"
-              ? "bg-orange-500/10 text-orange-400 border border-orange-500/20"
-              : "text-text-secondary hover:text-text-primary hover:bg-white/5"
+            "relative flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-colors shrink-0 outline-none select-none",
+            activeTab === "flashcards" ? "text-orange-400 animate-none" : "text-text-secondary hover:text-text-primary"
           )}
         >
-          <span className="material-symbols-outlined text-[16px]">style</span>
-          Flippable Cards
+          {activeTab === "flashcards" && (
+            <motion.div
+              layoutId="activeTabIndicator"
+              className="absolute inset-0 bg-orange-500/10 border border-orange-500/20 rounded-lg"
+              transition={{ type: "spring", stiffness: 380, damping: 30 }}
+            />
+          )}
+          <span className="relative z-10 flex items-center gap-2">
+            <span className="material-symbols-outlined text-[16px]">style</span>
+            Flippable Cards
+          </span>
         </button>
+        
         <button
           onClick={() => setActiveTab("mindmap")}
           className={cn(
-            "flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all shrink-0",
-            activeTab === "mindmap"
-              ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
-              : "text-text-secondary hover:text-text-primary hover:bg-white/5"
+            "relative flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-colors shrink-0 outline-none select-none",
+            activeTab === "mindmap" ? "text-emerald-400 animate-none" : "text-text-secondary hover:text-text-primary"
           )}
         >
-          <span className="material-symbols-outlined text-[16px]">account_tree</span>
-          Interactive Mind Map
+          {activeTab === "mindmap" && (
+            <motion.div
+              layoutId="activeTabIndicator"
+              className="absolute inset-0 bg-emerald-500/10 border border-emerald-500/20 rounded-lg"
+              transition={{ type: "spring", stiffness: 380, damping: 30 }}
+            />
+          )}
+          <span className="relative z-10 flex items-center gap-2">
+            <span className="material-symbols-outlined text-[16px]">account_tree</span>
+            Interactive Mind Map
+          </span>
         </button>
       </div>
 
       {/* Main Content Area */}
       <div className="p-8 min-h-[360px] flex items-center justify-center bg-app-card relative z-10 overflow-hidden">
-        {activeTab === "notes" && (
-          <div className="w-full max-w-2xl text-left space-y-6 select-none">
-            <div className="space-y-2">
-              <h2 className="text-xl font-extrabold text-text-primary tracking-tight">Chapter 1: Alkene Reactions & Regiochemistry</h2>
-              <div className="h-[2px] w-20 bg-app-brand rounded-full" />
-            </div>
-            <div className="space-y-4 text-xs text-text-secondary leading-relaxed font-sans">
-              <p>
-                Alkenes are unsaturated hydrocarbons containing a carbon-carbon double bond. Because of the electron density in the pi-bond, they undergo electrophilic addition reactions readily.
-              </p>
-              <div className="p-4 bg-app-inset/50 rounded-xl border border-app-border space-y-3">
-                <span className="text-[10px] font-bold text-app-brand uppercase tracking-wider">Markovnikov's Rule</span>
-                <p className="italic">
-                  "In the addition of an acid (HX) to an alkene, the acid hydrogen (H) becomes attached to the double-bonded carbon that starts with the greater number of hydrogen atoms."
+        <AnimatePresence mode="wait">
+          {activeTab === "notes" && (
+            <motion.div
+              key="notes"
+              initial={{ opacity: 0, scale: 0.97, filter: "blur(4px)" }}
+              animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
+              exit={{ opacity: 0, scale: 0.97, filter: "blur(4px)" }}
+              transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1] }}
+              className="w-full max-w-2xl text-left space-y-6 select-none"
+            >
+              <div className="space-y-2">
+                <h2 className="text-xl font-extrabold text-text-primary tracking-tight">Chapter 1: Alkene Reactions & Regiochemistry</h2>
+                <div className="h-[2px] w-20 bg-app-brand rounded-full" />
+              </div>
+              <div className="space-y-4 text-xs text-text-secondary leading-relaxed font-sans">
+                <p>
+                  Alkenes are unsaturated hydrocarbons containing a carbon-carbon double bond. Because of the electron density in the pi-bond, they undergo electrophilic addition reactions readily.
+                </p>
+                <div className="p-4 bg-app-inset/50 rounded-xl border border-app-border space-y-3">
+                  <span className="text-[10px] font-bold text-app-brand uppercase tracking-wider">Markovnikov's Rule</span>
+                  <p className="italic">
+                    "In the addition of an acid (HX) to an alkene, the acid hydrogen (H) becomes attached to the double-bonded carbon that starts with the greater number of hydrogen atoms."
+                  </p>
+                </div>
+                <p>
+                  This preference is driven by the stability of the carbocation intermediate. Tertiary carbocations are more stable than secondary, which are more stable than primary due to hyperconjugation and inductive effects.
                 </p>
               </div>
-              <p>
-                This preference is driven by the stability of the carbocation intermediate. Tertiary carbocations are more stable than secondary, which are more stable than primary due to hyperconjugation and inductive effects.
-              </p>
-            </div>
-          </div>
-        )}
+            </motion.div>
+          )}
 
-        {activeTab === "flashcards" && (
-          <div className="flex flex-col items-center gap-4 select-none">
-            <span className="text-[10px] text-text-muted font-bold uppercase tracking-wider">Click card to flip</span>
-            
-            <div
-              className="group/card relative h-[220px] w-[360px] [perspective:1000px] cursor-pointer"
-              onClick={() => setIsFlipped(!isFlipped)}
+          {activeTab === "flashcards" && (
+            <motion.div
+              key="flashcards"
+              initial={{ opacity: 0, scale: 0.97, filter: "blur(4px)" }}
+              animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
+              exit={{ opacity: 0, scale: 0.97, filter: "blur(4px)" }}
+              transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1] }}
+              className="flex flex-col items-center gap-4 select-none"
             >
-              <div
-                className={cn(
-                  "relative h-full w-full rounded-2xl transition-all duration-500",
-                  "[transform-style:preserve-3d]",
-                  isFlipped ? "[transform:rotateY(180deg)]" : ""
-                )}
+              <span className="text-[10px] text-text-muted font-bold uppercase tracking-wider">Click card to flip</span>
+              
+              <motion.div
+                className="group/card relative h-[220px] w-[360px] [perspective:1000px] cursor-pointer"
+                onClick={() => setIsFlipped(!isFlipped)}
+                whileTap={{ scale: 0.96 }}
+                transition={{ type: "spring", stiffness: 400, damping: 15 }}
               >
-                {/* Front Side */}
                 <div
                   className={cn(
-                    "absolute inset-0 h-full w-full rounded-2xl p-6 bg-app-inset border border-orange-500/30 flex flex-col justify-between shadow-xl",
-                    "[backface-visibility:hidden] [transform:rotateY(0deg)] transition-all",
-                    isFlipped ? "opacity-0" : "opacity-100"
+                    "relative h-full w-full rounded-2xl transition-all duration-500",
+                    "[transform-style:preserve-3d]",
+                    isFlipped ? "[transform:rotateY(180deg)]" : ""
                   )}
                 >
-                  <div className="flex items-center justify-between">
-                    <span className="text-[9px] font-bold text-orange-400 uppercase tracking-widest">Chemistry Set</span>
-                    <span className="material-symbols-outlined text-orange-400 text-sm">school</span>
+                  {/* Front Side */}
+                  <div
+                    className={cn(
+                      "absolute inset-0 h-full w-full rounded-2xl p-6 bg-app-inset border border-orange-500/30 flex flex-col justify-between shadow-xl",
+                      "[backface-visibility:hidden] [transform:rotateY(0deg)] transition-all",
+                      isFlipped ? "opacity-0" : "opacity-100"
+                    )}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-[9px] font-bold text-orange-400 uppercase tracking-widest">Chemistry Set</span>
+                      <span className="material-symbols-outlined text-orange-400 text-sm">school</span>
+                    </div>
+                    <p className="text-sm font-bold text-text-primary text-center my-auto leading-relaxed">
+                      What is the regiochemistry rule for the addition of HBr to an unsymmetrical alkene?
+                    </p>
+                    <div className="text-[9px] text-text-muted font-mono flex items-center justify-center gap-1.5">
+                      <span className="material-symbols-outlined text-xs">loop</span> Click to Flip
+                    </div>
                   </div>
-                  <p className="text-sm font-bold text-text-primary text-center my-auto leading-relaxed">
-                    What is the regiochemistry rule for the addition of HBr to an unsymmetrical alkene?
-                  </p>
-                  <div className="text-[9px] text-text-muted font-mono flex items-center justify-center gap-1.5">
-                    <span className="material-symbols-outlined text-xs">loop</span> Click to Flip
+
+                  {/* Back Side */}
+                  <div
+                    className={cn(
+                      "absolute inset-0 h-full w-full rounded-2xl p-6 bg-app-inset border border-emerald-500/30 flex flex-col justify-between shadow-xl",
+                      "[backface-visibility:hidden] [transform:rotateY(180deg)] transition-all",
+                      isFlipped ? "opacity-100 animate-none" : "opacity-0 pointer-events-none"
+                    )}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-[9px] font-bold text-emerald-400 uppercase tracking-widest">Answer Key</span>
+                      <span className="material-symbols-outlined text-emerald-400 text-sm">check_circle</span>
+                    </div>
+                    <p className="text-xs text-text-secondary text-center my-auto leading-relaxed">
+                      <strong className="text-text-primary">Markovnikov's Rule:</strong> The H+ adds to the carbon with more hydrogens, forming the more stable carbocation intermediate (usually 2° or 3°), directing Br- to the other carbon.
+                    </p>
+                    <div className="text-[9px] text-text-muted font-mono flex items-center justify-center gap-1.5">
+                      <span className="material-symbols-outlined text-xs">loop</span> Click to Flip back
+                    </div>
                   </div>
                 </div>
+              </motion.div>
+            </motion.div>
+          )}
 
-                {/* Back Side */}
-                <div
-                  className={cn(
-                    "absolute inset-0 h-full w-full rounded-2xl p-6 bg-app-inset border border-emerald-500/30 flex flex-col justify-between shadow-xl",
-                    "[backface-visibility:hidden] [transform:rotateY(180deg)] transition-all",
-                    isFlipped ? "opacity-100 animate-none" : "opacity-0 pointer-events-none"
-                  )}
+          {activeTab === "mindmap" && (
+            <motion.div
+              key="mindmap"
+              initial={{ opacity: 0, scale: 0.97, filter: "blur(4px)" }}
+              animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
+              exit={{ opacity: 0, scale: 0.97, filter: "blur(4px)" }}
+              transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1] }}
+              className="w-full max-w-3xl flex flex-col items-center gap-6 select-none"
+            >
+              <span className="text-[10px] text-text-muted font-bold uppercase tracking-wider">Hover nodes to reveal reaction branches</span>
+              
+              <div className="relative w-full h-[260px] bg-app-inset/30 border border-app-border/40 rounded-xl overflow-hidden">
+                {/* Responsive SVG Canvas */}
+                <svg 
+                  viewBox="0 0 700 260" 
+                  className="w-full h-full"
                 >
-                  <div className="flex items-center justify-between">
-                    <span className="text-[9px] font-bold text-emerald-400 uppercase tracking-widest">Answer Key</span>
-                    <span className="material-symbols-outlined text-emerald-400 text-sm">check_circle</span>
-                  </div>
-                  <p className="text-xs text-text-secondary text-center my-auto leading-relaxed">
-                    <strong className="text-text-primary">Markovnikov's Rule:</strong> The H+ adds to the carbon with more hydrogens, forming the more stable carbocation intermediate (usually 2° or 3°), directing Br- to the other carbon.
-                  </p>
-                  <div className="text-[9px] text-text-muted font-mono flex items-center justify-center gap-1.5">
-                    <span className="material-symbols-outlined text-xs">loop</span> Click to Flip back
-                  </div>
+                  {/* SVG Connections */}
+                  {/* Hub to Addition */}
+                  <path
+                    d="M 350,140 L 115,58"
+                    stroke={hoveredNode === "addition" ? "#60A5FA" : "#334155"}
+                    strokeWidth={hoveredNode === "addition" ? "2" : "1"}
+                    fill="none"
+                    className="transition-colors duration-300"
+                  />
+                  {/* Hub to Substitution */}
+                  <path
+                    d="M 350,140 L 350,38"
+                    stroke={hoveredNode === "substitution" ? "#8B5CF6" : "#334155"}
+                    strokeWidth={hoveredNode === "substitution" ? "2" : "1"}
+                    fill="none"
+                    className="transition-colors duration-300"
+                  />
+                  {/* Hub to Elimination */}
+                  <path
+                    d="M 350,140 L 580,58"
+                    stroke={hoveredNode === "elimination" ? "#F59E0B" : "#334155"}
+                    strokeWidth={hoveredNode === "elimination" ? "2" : "1"}
+                    fill="none"
+                    className="transition-colors duration-300"
+                  />
+
+                  {/* Central Hub */}
+                  <foreignObject x="270" y="120" width="160" height="40">
+                    <div className="w-full h-full rounded-lg bg-app-card border border-app-border flex items-center justify-center text-xs font-bold text-text-primary shadow-lg cursor-default">
+                      Organic Reactions
+                    </div>
+                  </foreignObject>
+
+                  {/* Branch 1: Addition */}
+                  <foreignObject x="30" y="40" width="170" height="36">
+                    <div
+                      className={cn(
+                        "w-full h-full rounded-lg border text-[10px] font-bold transition-all duration-300 cursor-pointer shadow-md flex items-center justify-center",
+                        hoveredNode === "addition"
+                          ? "bg-blue-500/10 border-blue-400 text-blue-300 scale-105"
+                          : "bg-app-card border-app-border text-text-secondary"
+                      )}
+                      onMouseEnter={() => setHoveredNode("addition")}
+                      onMouseLeave={() => setHoveredNode(null)}
+                    >
+                      Electrophilic Addition
+                    </div>
+                  </foreignObject>
+
+                  {/* Branch 2: Substitution */}
+                  <foreignObject x="260" y="20" width="180" height="36">
+                    <div
+                      className={cn(
+                        "w-full h-full rounded-lg border text-[10px] font-bold transition-all duration-300 cursor-pointer shadow-md flex items-center justify-center",
+                        hoveredNode === "substitution"
+                          ? "bg-purple-500/10 border-purple-400 text-purple-300 scale-105"
+                          : "bg-app-card border-app-border text-text-secondary"
+                      )}
+                      onMouseEnter={() => setHoveredNode("substitution")}
+                      onMouseLeave={() => setHoveredNode(null)}
+                    >
+                      Nucleophilic Substitution
+                    </div>
+                  </foreignObject>
+
+                  {/* Branch 3: Elimination */}
+                  <foreignObject x="490" y="40" width="180" height="36">
+                    <div
+                      className={cn(
+                        "w-full h-full rounded-lg border text-[10px] font-bold transition-all duration-300 cursor-pointer shadow-md flex items-center justify-center",
+                        hoveredNode === "elimination"
+                          ? "bg-amber-500/10 border-amber-400 text-amber-300 scale-105"
+                          : "bg-app-card border-app-border text-text-secondary"
+                      )}
+                      onMouseEnter={() => setHoveredNode("elimination")}
+                      onMouseLeave={() => setHoveredNode(null)}
+                    >
+                      Base-Induced Elimination
+                    </div>
+                  </foreignObject>
+                </svg>
+
+                {/* Details Tooltip Overlay */}
+                <div className="absolute bottom-4 inset-x-4 h-8 bg-app-inset/60 border border-app-border/40 rounded-lg flex items-center justify-center px-4 text-[10px] text-text-muted text-center font-mono">
+                  {hoveredNode === "addition" && "💡 Alkenes + HX / X2 — Mark/Anti-Mark orientation."}
+                  {hoveredNode === "substitution" && "💡 SN1 (2-step carbocation) vs SN2 (1-step backside attack)."}
+                  {hoveredNode === "elimination" && "💡 E1 vs E2 pathways forming carbon-carbon double bonds."}
+                  {!hoveredNode && "Hover any branch to inspect focus summaries."}
                 </div>
               </div>
-            </div>
-          </div>
-        )}
-
-        {activeTab === "mindmap" && (
-          <div className="w-full max-w-3xl flex flex-col items-center gap-6 select-none">
-            <span className="text-[10px] text-text-muted font-bold uppercase tracking-wider">Hover nodes to reveal reaction branches</span>
-            
-            <div className="relative w-full h-[260px] bg-app-inset/30 border border-app-border/40 rounded-xl overflow-hidden">
-              {/* Responsive SVG Canvas */}
-              <svg 
-                viewBox="0 0 700 260" 
-                className="w-full h-full"
-              >
-                {/* SVG Connections */}
-                {/* Hub to Addition */}
-                <path
-                  d="M 350,140 L 115,58"
-                  stroke={hoveredNode === "addition" ? "#60A5FA" : "#334155"}
-                  strokeWidth={hoveredNode === "addition" ? "2" : "1"}
-                  fill="none"
-                  className="transition-colors duration-300"
-                />
-                {/* Hub to Substitution */}
-                <path
-                  d="M 350,140 L 350,38"
-                  stroke={hoveredNode === "substitution" ? "#8B5CF6" : "#334155"}
-                  strokeWidth={hoveredNode === "substitution" ? "2" : "1"}
-                  fill="none"
-                  className="transition-colors duration-300"
-                />
-                {/* Hub to Elimination */}
-                <path
-                  d="M 350,140 L 580,58"
-                  stroke={hoveredNode === "elimination" ? "#F59E0B" : "#334155"}
-                  strokeWidth={hoveredNode === "elimination" ? "2" : "1"}
-                  fill="none"
-                  className="transition-colors duration-300"
-                />
-
-                {/* Central Hub */}
-                <foreignObject x="270" y="120" width="160" height="40">
-                  <div className="w-full h-full rounded-lg bg-app-card border border-app-border flex items-center justify-center text-xs font-bold text-text-primary shadow-lg cursor-default">
-                    Organic Reactions
-                  </div>
-                </foreignObject>
-
-                {/* Branch 1: Addition */}
-                <foreignObject x="30" y="40" width="170" height="36">
-                  <div
-                    className={cn(
-                      "w-full h-full rounded-lg border text-[10px] font-bold transition-all duration-300 cursor-pointer shadow-md flex items-center justify-center",
-                      hoveredNode === "addition"
-                        ? "bg-blue-500/10 border-blue-400 text-blue-300 scale-105"
-                        : "bg-app-card border-app-border text-text-secondary"
-                    )}
-                    onMouseEnter={() => setHoveredNode("addition")}
-                    onMouseLeave={() => setHoveredNode(null)}
-                  >
-                    Electrophilic Addition
-                  </div>
-                </foreignObject>
-
-                {/* Branch 2: Substitution */}
-                <foreignObject x="260" y="20" width="180" height="36">
-                  <div
-                    className={cn(
-                      "w-full h-full rounded-lg border text-[10px] font-bold transition-all duration-300 cursor-pointer shadow-md flex items-center justify-center",
-                      hoveredNode === "substitution"
-                        ? "bg-purple-500/10 border-purple-400 text-purple-300 scale-105"
-                        : "bg-app-card border-app-border text-text-secondary"
-                    )}
-                    onMouseEnter={() => setHoveredNode("substitution")}
-                    onMouseLeave={() => setHoveredNode(null)}
-                  >
-                    Nucleophilic Substitution
-                  </div>
-                </foreignObject>
-
-                {/* Branch 3: Elimination */}
-                <foreignObject x="490" y="40" width="180" height="36">
-                  <div
-                    className={cn(
-                      "w-full h-full rounded-lg border text-[10px] font-bold transition-all duration-300 cursor-pointer shadow-md flex items-center justify-center",
-                      hoveredNode === "elimination"
-                        ? "bg-amber-500/10 border-amber-400 text-amber-300 scale-105"
-                        : "bg-app-card border-app-border text-text-secondary"
-                    )}
-                    onMouseEnter={() => setHoveredNode("elimination")}
-                    onMouseLeave={() => setHoveredNode(null)}
-                  >
-                    Base-Induced Elimination
-                  </div>
-                </foreignObject>
-              </svg>
-
-              {/* Details Tooltip Overlay */}
-              <div className="absolute bottom-4 inset-x-4 h-8 bg-app-inset/60 border border-app-border/40 rounded-lg flex items-center justify-center px-4 text-[10px] text-text-muted text-center font-mono">
-                {hoveredNode === "addition" && "💡 Alkenes + HX / X2 — Mark/Anti-Mark orientation."}
-                {hoveredNode === "substitution" && "💡 SN1 (2-step carbocation) vs SN2 (1-step backside attack)."}
-                {hoveredNode === "elimination" && "💡 E1 vs E2 pathways forming carbon-carbon double bonds."}
-                {!hoveredNode && "Hover any branch to inspect focus summaries."}
-              </div>
-            </div>
-          </div>
-        )}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );
@@ -277,7 +326,7 @@ export function Hero() {
       </p>
       <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
         <RainbowButton asChild className="px-8 font-semibold">
-          <Link href="/login">Get Started for Free</Link>
+          <Link href="/login" className="text-white">Get Started for Free</Link>
         </RainbowButton>
         <Button size="lg" variant="outline" className="px-8 text-md font-semibold gap-2">
           <span className="material-symbols-outlined text-lg">play_circle</span> Watch Demo

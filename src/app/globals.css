@@ -149,6 +149,18 @@ button:not(:disabled):hover,
   color: #fff;
 }
 
+button:not(:disabled),
+[data-slot="button"]:not(:disabled),
+.rainbow-button {
+  transition: transform 160ms cubic-bezier(0.23, 1, 0.32, 1), opacity 160ms cubic-bezier(0.23, 1, 0.32, 1), background-color 160ms cubic-bezier(0.23, 1, 0.32, 1), border-color 160ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+button:not(:disabled):active,
+[data-slot="button"]:not(:disabled):active,
+.rainbow-button:active {
+  transform: scale(0.97);
+}
+
 /* Custom font styles as utility classes for convenience */
 .font-display-lg { font-size: var(--font-size-display-lg); line-height: 72px; letter-spacing: -0.02em; font-weight: 700; }
 .text-display-lg { font-size: var(--font-size-display-lg); line-height: 72px; letter-spacing: -0.02em; font-weight: 700; }

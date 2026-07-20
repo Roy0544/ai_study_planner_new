@@ -20,7 +20,7 @@ export const handleGoogleLogin =async()=>{
         const { error } = await client.auth.signInWithOAuth({
             provider:'google',
             options:{
-                redirectTo:`${window.location.origin}/dashboard`
+                redirectTo:`${window.location.origin}/auth/callback?next=/dashboard`
             }
         })
         if(error) throw error;
@@ -49,7 +49,7 @@ export const handleEmailSignUp = async (email, password) => {
             email,
             password,
             options: {
-                emailRedirectTo: `${window.location.origin}/dashboard`,
+                emailRedirectTo: `${window.location.origin}/auth/callback?next=/dashboard`,
             },
         });
         if (error) throw error;

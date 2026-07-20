@@ -52,7 +52,7 @@ export default function DashboardClient({ sets, credits, assetsGenerated, displa
       variants={containerVariants}
       initial="hidden"
       animate="show"
-      className="p-6 max-w-6xl mx-auto w-full flex-1 select-none"
+      className="p-6 w-full flex-1 select-none"
     >
       {/* Welcome Header */}
       <motion.div variants={itemVariants} className="mb-8 space-y-2">

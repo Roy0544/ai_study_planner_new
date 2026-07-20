@@ -33,12 +33,17 @@ export default function BillingPage() {
   const [loadingPack, setLoadingPack] = useState(null); // ID of currently purchasing pack
   const [successPack, setSuccessPack] = useState(null); // ID of recently purchased pack
   const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
   const [copiedId, setCopiedId] = useState(null);
   const [policyModal, setPolicyModal] = useState(null);
   const [promoCode, setPromoCode] = useState("");
   const [promoError, setPromoError] = useState("");
   const [promoSuccess, setPromoSuccess] = useState("");
   const [isRedeeming, setIsRedeeming] = useState(false);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery]);
 
   // Load Razorpay & user data from Supabase
   useEffect(() => {
@@ -234,6 +239,13 @@ export default function BillingPage() {
     tx.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
     (tx.description || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
     tx.type.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const ITEMS_PER_PAGE = 10;
+  const totalPages = Math.max(1, Math.ceil(filteredTransactions.length / ITEMS_PER_PAGE));
+  const paginatedTransactions = filteredTransactions.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
   );
 
   return (
@@ -507,7 +519,7 @@ export default function BillingPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
         {/* Left: Usage Cost Guide (1/3 width) */}
-        <Card className="lg:col-span-1 border border-app-border bg-app-card rounded-xl overflow-hidden relative p-5 flex flex-col justify-between shadow-sm min-h-[300px]">
+        <Card className="lg:col-span-1 self-start border border-app-border bg-app-card rounded-xl overflow-hidden relative p-5 flex flex-col justify-between shadow-sm min-h-[300px]">
           <div className="space-y-4 w-full">
             <div className="space-y-1">
               <span className="text-[10px] font-bold text-text-muted uppercase tracking-wider block">Usage Guide</span>
@@ -586,7 +598,7 @@ export default function BillingPage() {
                         </tr>
                       ))
                     ) : filteredTransactions.length > 0 ? (
-                      filteredTransactions.map((tx) => {
+                      paginatedTransactions.map((tx) => {
                         const isPositive = tx.amount > 0;
                         return (
                           <motion.tr
@@ -660,6 +672,42 @@ export default function BillingPage() {
               </table>
             </div>
           </div>
+
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
+              <div className="text-[10px] text-text-secondary font-medium">
+                Showing <span className="font-bold text-text-primary">{(currentPage - 1) * ITEMS_PER_PAGE + 1}</span> to{" "}
+                <span className="font-bold text-text-primary">
+                  {Math.min(currentPage * ITEMS_PER_PAGE, filteredTransactions.length)}
+                </span>{" "}
+                of <span className="font-bold text-text-primary">{filteredTransactions.length}</span> entries
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="xs"
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="rounded-lg font-bold border border-app-border hover:bg-white/5 disabled:opacity-50 text-[10px] h-7 cursor-pointer"
+                >
+                  Previous
+                </Button>
+                <div className="text-[10px] text-text-primary font-bold px-2">
+                  Page {currentPage} of {totalPages}
+                </div>
+                <Button
+                  variant="outline"
+                  size="xs"
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  className="rounded-lg font-bold border border-app-border hover:bg-white/5 disabled:opacity-50 text-[10px] h-7 cursor-pointer"
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
 
       </div>
@@ -690,7 +738,7 @@ export default function BillingPage() {
 
       {/* Policy Dialog */}
       <Dialog open={policyModal !== null} onOpenChange={(open) => !open && setPolicyModal(null)}>
-        <DialogContent className="w-[90vw] md:w-[600px] max-w-none max-h-[80vh] overflow-y-auto bg-app-card border border-app-border text-text-primary rounded-xl p-6 shadow-xl">
+        <DialogContent className="w-[90vw] md:w-[600px] !max-w-none max-h-[80vh] overflow-y-auto bg-app-card border border-app-border text-text-primary rounded-xl p-6 shadow-xl">
           {policyModal === "terms" && (
             <div className="space-y-4 pt-1">
               <DialogHeader>

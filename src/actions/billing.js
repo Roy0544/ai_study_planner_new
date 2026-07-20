@@ -1,27 +1,9 @@
 "use server"
 import Razorpay from "razorpay";
 import crypto from "crypto";
-import { createServerClient } from "@supabase/ssr";
 import { createClient } from "@supabase/supabase-js";
-import { cookies } from "next/headers";
 import { CREDIT_PACKAGES, CREDIT_COSTS } from "@/lib/credits";
-
-// ─── Supabase helpers ───────────────────────────────────────────────────────
-
-async function getSupabaseServerClient() {
-  const cookieStore = await cookies();
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL?.trim(),
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim(),
-    {
-      cookies: {
-        get(name) { return cookieStore.get(name)?.value; },
-        set(name, value, options) { cookieStore.set({ name, value, ...options }); },
-        remove(name, options) { cookieStore.delete({ name, ...options }); },
-      },
-    }
-  );
-}
+import { getSupabaseServerClient } from "@/lib/supabase-server";
 
 // Admin client bypasses all RLS — only used server-side for credit updates
 function getSupabaseAdminClient() {

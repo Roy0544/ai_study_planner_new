@@ -1,35 +1,10 @@
 "use server"
 import { GoogleGenerativeAI } from "@google/generative-ai"
-import { createServerClient } from "@supabase/ssr";
-import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { parseOffice } from "officeparser";
 import { deductCredits, refundCredits } from "./billing";
 import { checkRateLimit } from "../lib/rate-limiter";
-
-async function getSupabaseServerClient() {
-  const cookieStore = await cookies();
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
-
-  if (!supabaseUrl || !supabaseAnonKey) {
-    throw new Error('Supabase configuration is missing.');
-  }
-
-  return createServerClient(supabaseUrl, supabaseAnonKey, {
-    cookies: {
-      get(name) {
-        return cookieStore.get(name)?.value;
-      },
-      set(name, value, options) {
-        cookieStore.set({ name, value, ...options });
-      },
-      remove(name, options) {
-        cookieStore.delete({ name, ...options });
-      },
-    },
-  });
-}
+import { getSupabaseServerClient } from "@/lib/supabase-server";
 
 async function getGeminiFilePart( fileUrl  ) {
   if (!fileUrl) return null;

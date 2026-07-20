@@ -4,6 +4,25 @@ import { WorkflowBeam } from "@/components/workflow-beam";
 import { KineticText } from "@/components/ui/kinetic-text";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { motion } from "motion/react";
+
+const stepVariants = {
+  hidden: { opacity: 0, y: 15 },
+  visible: { 
+    opacity: 1, 
+    y: 0,
+    transition: { type: "spring", stiffness: 260, damping: 25 }
+  }
+};
+
+const containerVariants = {
+  hidden: {},
+  visible: {
+    transition: {
+      staggerChildren: 0.1
+    }
+  }
+};
 
 export function HowItWorks() {
   const [activeStep, setActiveStep] = useState(null);
@@ -26,14 +45,25 @@ export function HowItWorks() {
           {/* Animated beam reflecting current hovered index */}
           <WorkflowBeam className="py-12" showLabels={false} activeStep={activeStep} />
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-8 px-4">
+          <motion.div 
+            variants={containerVariants}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-100px" }}
+            className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-8 px-4"
+          >
             
             {/* Step 1: Upload */}
-            <div 
+            <motion.div 
+              variants={stepVariants}
+              animate={{
+                scale: activeStep === 1 ? 1.02 : 1,
+              }}
+              transition={{ type: "spring", stiffness: 400, damping: 20 }}
               className={cn(
-                "p-6 rounded-2xl border transition-all duration-300 text-center space-y-3 cursor-default",
+                "p-6 rounded-2xl border text-center space-y-3 cursor-default transition-all duration-300",
                 activeStep === 1
-                  ? "bg-app-brand/5 border-app-brand/35 scale-[1.02] shadow-[0_0_15px_rgba(96,165,250,0.1)]"
+                  ? "bg-app-brand/5 border-app-brand/35 shadow-[0_0_15px_rgba(96,165,250,0.1)]"
                   : "bg-transparent border-transparent"
               )}
               onMouseEnter={() => setActiveStep(1)}
@@ -45,14 +75,19 @@ export function HowItWorks() {
               <p className="text-xs text-text-secondary leading-relaxed">
                 Drop your PDFs, lecture slide decks, research papers, or notes directly into the creator box.
               </p>
-            </div>
+            </motion.div>
 
             {/* Step 2: Synthesize */}
-            <div 
+            <motion.div 
+              variants={stepVariants}
+              animate={{
+                scale: activeStep === 2 ? 1.02 : 1,
+              }}
+              transition={{ type: "spring", stiffness: 400, damping: 20 }}
               className={cn(
-                "p-6 rounded-2xl border transition-all duration-300 text-center space-y-3 cursor-default",
+                "p-6 rounded-2xl border text-center space-y-3 cursor-default transition-all duration-300",
                 activeStep === 2
-                  ? "bg-purple-500/5 border-purple-500/35 scale-[1.02] shadow-[0_0_15px_rgba(139,92,246,0.1)]"
+                  ? "bg-purple-500/5 border-purple-500/35 shadow-[0_0_15px_rgba(139,92,246,0.1)]"
                   : "bg-transparent border-transparent"
               )}
               onMouseEnter={() => setActiveStep(2)}
@@ -64,14 +99,19 @@ export function HowItWorks() {
               <p className="text-xs text-text-secondary leading-relaxed">
                 The generative engine scans, summarizes, and maps out key concepts and vocab terms instantly.
               </p>
-            </div>
+            </motion.div>
 
             {/* Step 3: Learn */}
-            <div 
+            <motion.div 
+              variants={stepVariants}
+              animate={{
+                scale: activeStep === 3 ? 1.02 : 1,
+              }}
+              transition={{ type: "spring", stiffness: 400, damping: 20 }}
               className={cn(
-                "p-6 rounded-2xl border transition-all duration-300 text-center space-y-3 cursor-default",
+                "p-6 rounded-2xl border text-center space-y-3 cursor-default transition-all duration-300",
                 activeStep === 3
-                  ? "bg-emerald-500/5 border-emerald-500/35 scale-[1.02] shadow-[0_0_15px_rgba(16,185,129,0.1)]"
+                  ? "bg-emerald-500/5 border-emerald-500/35 shadow-[0_0_15px_rgba(16,185,129,0.1)]"
                   : "bg-transparent border-transparent"
               )}
               onMouseEnter={() => setActiveStep(3)}
@@ -83,9 +123,9 @@ export function HowItWorks() {
               <p className="text-xs text-text-secondary leading-relaxed">
                 Start study sessions with digital flashcard decks, custom quizzes, and responsive mind maps.
               </p>
-            </div>
+            </motion.div>
 
-          </div>
+          </motion.div>
         </div>
       </div>
     </section>

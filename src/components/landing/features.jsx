@@ -3,6 +3,25 @@
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { NoiseTexture } from "@/components/ui/noise-texture";
+import { motion } from "motion/react";
+
+const cardVariants = {
+  hidden: { opacity: 0, y: 15 },
+  visible: { 
+    opacity: 1, 
+    y: 0,
+    transition: { type: "spring", stiffness: 260, damping: 25 }
+  }
+};
+
+const containerVariants = {
+  hidden: {},
+  visible: {
+    transition: {
+      staggerChildren: 0.08
+    }
+  }
+};
 
 export function Features() {
   return (
@@ -19,11 +38,22 @@ export function Features() {
       </div>
       
       {/* Bento Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+      <motion.div 
+        variants={containerVariants}
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, margin: "-100px" }}
+        className="grid grid-cols-1 md:grid-cols-3 gap-5"
+      >
         
         {/* Card 1: Adaptive Quizzes (spans 2 cols) */}
-        <div className="md:col-span-2 rounded-xl border border-app-border bg-app-card overflow-hidden relative group min-h-[190px] flex flex-col sm:flex-row justify-between">
-          <div className="absolute inset-0 bg-gradient-to-br from-app-brand/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+        <motion.div 
+          variants={cardVariants}
+          whileHover={{ y: -4, borderColor: "rgba(96, 165, 250, 0.35)" }}
+          transition={{ type: "spring", stiffness: 400, damping: 20 }}
+          className="md:col-span-2 rounded-xl border border-app-border bg-app-card overflow-hidden relative group min-h-[190px] flex flex-col sm:flex-row justify-between cursor-default"
+        >
+          <div className="absolute inset-0 bg-gradient-to-br from-app-brand/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
           <NoiseTexture className="opacity-[0.02]" />
           
           <div className="p-6 flex flex-col justify-between flex-1 space-y-4 z-10">
@@ -54,11 +84,16 @@ export function Features() {
               Solvent nucleophilicity increase
             </div>
           </div>
-        </div>
+        </motion.div>
 
         {/* Card 2: Smart Flashcards (spans 1 col) */}
-        <div className="rounded-xl border border-app-border bg-app-card overflow-hidden relative group p-6 flex flex-col justify-between min-h-[190px]">
-          <div className="absolute inset-0 bg-gradient-to-br from-orange-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+        <motion.div 
+          variants={cardVariants}
+          whileHover={{ y: -4, borderColor: "rgba(249, 115, 22, 0.35)" }}
+          transition={{ type: "spring", stiffness: 400, damping: 20 }}
+          className="rounded-xl border border-app-border bg-app-card overflow-hidden relative group p-6 flex flex-col justify-between min-h-[190px] cursor-default"
+        >
+          <div className="absolute inset-0 bg-gradient-to-br from-orange-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
           <NoiseTexture className="opacity-[0.02]" />
           
           <div className="space-y-3 z-10">
@@ -77,11 +112,16 @@ export function Features() {
               </p>
             </div>
           </div>
-        </div>
+        </motion.div>
 
         {/* Card 3: Structured Notes (spans 1 col) */}
-        <div className="rounded-xl border border-app-border bg-app-card overflow-hidden relative group p-6 flex flex-col justify-between min-h-[190px]">
-          <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+        <motion.div 
+          variants={cardVariants}
+          whileHover={{ y: -4, borderColor: "rgba(59, 130, 246, 0.35)" }}
+          transition={{ type: "spring", stiffness: 400, damping: 20 }}
+          className="rounded-xl border border-app-border bg-app-card overflow-hidden relative group p-6 flex flex-col justify-between min-h-[190px] cursor-default"
+        >
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
           <NoiseTexture className="opacity-[0.02]" />
           
           <div className="space-y-3 z-10">
@@ -100,11 +140,16 @@ export function Features() {
               </p>
             </div>
           </div>
-        </div>
+        </motion.div>
 
         {/* Card 4: AI Flowcharts (spans 2 cols) */}
-        <div className="md:col-span-2 rounded-xl border border-app-border bg-app-card overflow-hidden relative group min-h-[190px] flex flex-col sm:flex-row justify-between">
-          <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+        <motion.div 
+          variants={cardVariants}
+          whileHover={{ y: -4, borderColor: "rgba(16, 185, 129, 0.35)" }}
+          transition={{ type: "spring", stiffness: 400, damping: 20 }}
+          className="md:col-span-2 rounded-xl border border-app-border bg-app-card overflow-hidden relative group min-h-[190px] flex flex-col sm:flex-row justify-between cursor-default"
+        >
+          <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
           <NoiseTexture className="opacity-[0.02]" />
           
           <div className="p-6 flex flex-col justify-between flex-1 space-y-4 z-10">
@@ -135,9 +180,9 @@ export function Features() {
               <circle cx="160" cy="60" r="6" fill="#10B981" />
             </svg>
           </div>
-        </div>
+        </motion.div>
 
-      </div>
+      </motion.div>
     </section>
   );
 }
