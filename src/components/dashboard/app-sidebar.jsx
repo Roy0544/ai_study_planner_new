@@ -146,7 +146,7 @@ export function AppSidebar() {
               <SidebarMenuItem key={item.href} className="relative">
                 {/* Active Indicator Line */}
                 {isActive && (
-                  <div className="absolute -left-1 top-1/2 -translate-y-1/2 w-[3px] h-6 rounded-r-full bg-app-brand shadow-[0_0_8px_#60A5FA] z-20 transition-all duration-300" />
+                  <div className="absolute -left-1 top-1/2 -translate-y-1/2 w-[3px] h-6 rounded-r-full bg-orange-500 shadow-[0_0_8px_#f97316] z-20 transition-all duration-300" />
                 )}
                 
                 <SidebarMenuButton
@@ -155,8 +155,8 @@ export function AppSidebar() {
                   tooltip={item.tooltip}
                   className={cn(
                     "h-11 rounded-xl text-text-secondary transition-all duration-200 cursor-pointer group/menu-btn border border-transparent",
-                    "hover:text-app-brand hover:bg-app-brand/5 hover:border-app-brand/5",
-                    "data-[active=true]:bg-gradient-to-r data-[active=true]:from-app-brand/10 data-[active=true]:to-transparent data-[active=true]:text-app-brand data-[active=true]:border-app-brand/10"
+                    "hover:text-orange-500 hover:bg-orange-500/5 hover:border-orange-500/5",
+                    "data-[active=true]:bg-gradient-to-r data-[active=true]:from-orange-500/10 data-[active=true]:to-transparent data-[active=true]:text-orange-500 data-[active=true]:border-orange-500/10"
                   )}
                 >
                   <Link href={item.href} onClick={handleLinkClick} className="flex items-center w-full">

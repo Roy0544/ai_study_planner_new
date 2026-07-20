@@ -47,7 +47,7 @@ export function Navbar() {
           >
             Login
           </Link>
-          <Button asChild className="rounded-lg bg-app-brand hover:bg-app-brand-hover text-app-inset font-bold text-xs h-9 px-4 border-none shadow-sm transition-all">
+          <Button asChild className="rounded-lg bg-app-brand hover:bg-app-brand-hover text-white font-bold text-xs h-9 px-4 border-none shadow-sm transition-all">
             <Link href="/login" className="text-white">Get Started</Link>
           </Button>
         </div>
