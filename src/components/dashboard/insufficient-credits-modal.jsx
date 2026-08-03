@@ -21,13 +21,13 @@ export function InsufficientCreditsModal({ isOpen, onClose, requiredCredits, cur
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="w-full max-w-[calc(100%-2.5rem)] sm:max-w-lg bg-surface border border-muted-foreground/15 text-foreground rounded-xl p-6 shadow-2xl">
+      <DialogContent className="w-full max-w-none bg-surface border border-muted-foreground/15 text-foreground rounded-xl p-6 shadow-2xl">
         <DialogHeader className="flex flex-col items-center text-center space-y-3 pt-2">
           <div className="w-12 h-12 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-500 animate-bounce">
             <span className="material-symbols-outlined text-2xl font-bold">toll</span>
           </div>
           <DialogTitle className="text-lg font-extrabold">Insufficient Credits</DialogTitle>
-          <DialogDescription className="text-xs text-muted-foreground max-w-sm">
+          <DialogDescription className="text-xs text-muted-foreground">
             You don't have enough credits to perform this action. Top up your balance to continue.
           </DialogDescription>
         </DialogHeader>

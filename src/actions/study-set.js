@@ -218,7 +218,7 @@ export async function createFullStudySet(formData) {
       if (!creditCheck.success) {                                                                                                                    
         return {                                                                                                                                     
           success: false,                                                                                                                            
-          insufficientCredits: true,                                                                                                                 
+          insufficientCredits: creditCheck.insufficientCredits || false,                                                                                                                 
           error: creditCheck.error // e.g., "You need 2 credits for this action, but you only have X."                                               
         };                                                                                                                                           
       }  
@@ -426,7 +426,7 @@ export async function generateMindMap(setId, content, fileUrl) {
       if (!creditCheck.success) {                                                                                                                    
         return {                                                                                                                                     
           success: false,                                                                                                                            
-          insufficientCredits: true,                                                                                                                 
+          insufficientCredits: creditCheck.insufficientCredits || false,                                                                                                                 
           error: creditCheck.error // e.g., "You need 2 credits for this action, but you only have X."                                               
         };                                                                                                                                           
       }  
@@ -546,7 +546,7 @@ export async function generateFlashcards(setId, content, fileUrl) {
       if (!creditCheck.success) {                                                                                                                    
         return {                                                                                                                                     
           success: false,                                                                                                                            
-          insufficientCredits: true,                                                                                                                 
+          insufficientCredits: creditCheck.insufficientCredits || false,                                                                                                                 
           error: creditCheck.error // e.g., "You need 2 credits for this action, but you only have X."                                               
         };                                                                                                                                           
       }  
@@ -649,7 +649,7 @@ export async function generateQuiz(setId, content, fileUrl) {
       if (!creditCheck.success) {                                                                                                                    
         return {                                                                                                                                     
           success: false,                                                                                                                            
-          insufficientCredits: true,                                                                                                                 
+          insufficientCredits: creditCheck.insufficientCredits || false,                                                                                                                 
           error: creditCheck.error // e.g., "You need 2 credits for this action, but you only have X."                                               
         };                                                                                                                                           
       }  
